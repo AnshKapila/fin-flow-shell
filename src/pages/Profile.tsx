@@ -1,12 +1,17 @@
-import { User, Mail, Phone, Calendar, LogOut, ChevronRight, Bell, Shield, Palette } from "lucide-react";
+import { User, Mail, Calendar, LogOut, ChevronRight, Bell, Shield, Palette } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ListCard } from "@/components/ui/list-card";
-import { mockUser } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProfilePage() {
-  const handleLogout = () => {
-    console.log("Logout clicked (mock only)");
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
   };
 
   const settingsItems = [
@@ -26,8 +31,10 @@ export default function ProfilePage() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-card-blue mb-4">
               <User className="h-10 w-10 text-primary-foreground" />
             </div>
-            <h2 className="text-xl font-bold text-foreground">{mockUser.name}</h2>
-            <p className="text-sm text-muted-foreground mt-1">{mockUser.email}</p>
+            <h2 className="text-xl font-bold text-foreground">
+              {user?.email?.split("@")[0] || "User"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
           </div>
         </ListCard>
 
@@ -43,21 +50,9 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium text-foreground">{mockUser.email}</p>
+                <p className="font-medium text-foreground">{user?.email}</p>
               </div>
             </div>
-            
-            {mockUser.phone && (
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium text-foreground">{mockUser.phone}</p>
-                </div>
-              </div>
-            )}
 
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -65,7 +60,11 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Member Since</p>
-                <p className="font-medium text-foreground">{mockUser.joined}</p>
+                <p className="font-medium text-foreground">
+                  {user?.created_at 
+                    ? new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+                    : "—"}
+                </p>
               </div>
             </div>
           </ListCard>

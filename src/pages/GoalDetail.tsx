@@ -1,43 +1,59 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, Pencil, Trash2, Link } from "lucide-react";
+import { Calendar, Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ListCard } from "@/components/ui/list-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { mockGoals, mockInvestments, formatCurrency } from "@/data/mockData";
+import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { useGoal, useGoals } from "@/hooks/useGoals";
+import { formatCurrency } from "@/data/mockData";
+import { useState } from "react";
 
 export default function GoalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
-  const goal = mockGoals.find(g => g.id === id);
+  const { data: goal, isLoading } = useGoal(id);
+  const { deleteGoal } = useGoals();
+
+  const handleDelete = () => {
+    if (goal) {
+      deleteGoal.mutate(goal.id, {
+        onSuccess: () => {
+          navigate("/goals");
+        },
+      });
+    }
+    setShowDeleteModal(false);
+  };
   
-  if (!goal) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Goal not found</p>
+      <div className="animate-fade-in pb-24">
+        <PageHeader title="Goal Details" showBack />
+        <div className="px-4 flex items-center justify-center py-12">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
       </div>
     );
   }
 
-  const percent = Math.round((goal.savedAmount / goal.targetAmount) * 100);
-  const remaining = goal.targetAmount - goal.savedAmount;
+  if (!goal) {
+    return (
+      <div className="animate-fade-in pb-24">
+        <PageHeader title="Goal Details" showBack />
+        <div className="flex items-center justify-center py-12">
+          <p className="text-muted-foreground">Goal not found</p>
+        </div>
+      </div>
+    );
+  }
 
-  const linkedInvestments = goal.linkedInvestments?.map(li => {
-    const investment = mockInvestments.find(inv => inv.id === li.investmentId);
-    return investment ? { ...investment, contribution: li.contribution } : null;
-  }).filter(Boolean);
-
-  const getCategoryEmoji = (category: string) => {
-    const emojis: Record<string, string> = {
-      VEHICLE: "🚗",
-      TRAVEL: "✈️",
-      LIFESTYLE: "🏠",
-      EMERGENCY: "🛡️",
-      RETIREMENT: "🎯",
-    };
-    return emojis[category] || "🎯";
-  };
+  const percent = goal.target_amount > 0 
+    ? Math.round((goal.current_amount / goal.target_amount) * 100)
+    : 0;
+  const remaining = goal.target_amount - goal.current_amount;
 
   return (
     <div className="animate-fade-in pb-24">
@@ -52,13 +68,13 @@ export default function GoalDetail() {
         {/* Goal Header */}
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-fintrack-card-elevated text-2xl">
-            {getCategoryEmoji(goal.category)}
+            🎯
           </div>
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-              {goal.category}
-            </span>
             <h1 className="text-2xl font-bold text-foreground">{goal.name}</h1>
+            <p className="text-sm text-muted-foreground">
+              Created {new Date(goal.created_at).toLocaleDateString()}
+            </p>
           </div>
         </div>
 
@@ -68,18 +84,18 @@ export default function GoalDetail() {
             <div>
               <SummaryLabel>Saved</SummaryLabel>
               <SummaryValue size="xl" className="mt-1">
-                {formatCurrency(goal.savedAmount)}
+                {formatCurrency(goal.current_amount)}
               </SummaryValue>
             </div>
             <div className="text-right">
               <p className="text-sm text-primary-foreground/70">Target</p>
               <p className="text-xl font-bold text-primary-foreground">
-                {formatCurrency(goal.targetAmount)}
+                {formatCurrency(goal.target_amount)}
               </p>
             </div>
           </div>
 
-          <ProgressBar value={goal.savedAmount} max={goal.targetAmount} variant="blue" />
+          <ProgressBar value={goal.current_amount} max={goal.target_amount} variant="blue" />
           
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-primary-foreground/20">
             <div>
@@ -89,7 +105,7 @@ export default function GoalDetail() {
             <div className="text-right">
               <p className="text-sm text-primary-foreground/70">Remaining</p>
               <p className="text-lg font-semibold text-primary-foreground">
-                {formatCurrency(remaining)}
+                {formatCurrency(remaining > 0 ? remaining : 0)}
               </p>
             </div>
           </div>
@@ -104,60 +120,40 @@ export default function GoalDetail() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Target Deadline</p>
-                <p className="font-medium text-foreground">In {goal.deadline}</p>
+                <p className="font-medium text-foreground">
+                  {new Date(goal.deadline).toLocaleDateString()}
+                </p>
               </div>
             </div>
           </ListCard>
         )}
 
-        {/* Linked Investments */}
-        {linkedInvestments && linkedInvestments.length > 0 && (
-          <section>
-            <h3 className="font-semibold text-foreground mb-3">Linked Investments</h3>
-            <div className="space-y-3">
-              {linkedInvestments.map((investment: any) => (
-                <ListCard 
-                  key={investment.id}
-                  onClick={() => navigate(`/wealth/${investment.type}/${investment.id}`)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                      <Link className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{investment.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Contributing {formatCurrency(investment.contribution)} / month
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium text-fintrack-green">
-                      +{((investment.contribution / goal.targetAmount) * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </ListCard>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Link More Investments CTA */}
-        <button className="w-full rounded-xl border-2 border-dashed border-border py-4 text-center text-sm font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-          + Link an Investment
-        </button>
-
         {/* Actions */}
         <div className="flex gap-4">
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-muted py-3 font-medium text-foreground hover:bg-muted/80 transition-colors">
+          <button 
+            onClick={() => navigate(`/goals/${goal.id}/edit`)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-muted py-3 font-medium text-foreground hover:bg-muted/80 transition-colors"
+          >
             <Pencil className="h-4 w-4" />
             Edit Goal
           </button>
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive/10 py-3 font-medium text-destructive hover:bg-destructive/20 transition-colors">
+          <button 
+            onClick={() => setShowDeleteModal(true)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive/10 py-3 font-medium text-destructive hover:bg-destructive/20 transition-colors"
+          >
             <Trash2 className="h-4 w-4" />
             Delete
           </button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        title="Delete Goal"
+        description="Are you sure you want to delete this goal? This action cannot be undone."
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
