@@ -55,7 +55,6 @@ export default function SpendingsPage() {
       <PageHeader 
         title="Spendings" 
         subtitle="Track recurring and major expenses"
-        showBack
       />
       
       <div className="px-4 space-y-6">

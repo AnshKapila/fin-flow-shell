@@ -16,6 +16,8 @@ import Gold from "./pages/wealth/Gold";
 import FixedDeposits from "./pages/wealth/FixedDeposits";
 import Savings from "./pages/wealth/Savings";
 import InvestmentDetail from "./pages/wealth/InvestmentDetail";
+import AddStockOrMutualFund from "./pages/wealth/AddStockOrMutualFund";
+import AddSimpleInvestment from "./pages/wealth/AddSimpleInvestment";
 import Goals from "./pages/Goals";
 import GoalDetail from "./pages/GoalDetail";
 import Spendings from "./pages/Spendings";
@@ -40,6 +42,11 @@ const App = () => (
               <Route path="fd" element={<FixedDeposits />} />
               <Route path="savings" element={<Savings />} />
             </Route>
+            <Route path="/wealth/add/stocks" element={<AddStockOrMutualFund />} />
+            <Route path="/wealth/add/mutual-funds" element={<AddStockOrMutualFund />} />
+            <Route path="/wealth/add/gold" element={<AddSimpleInvestment />} />
+            <Route path="/wealth/add/fd" element={<AddSimpleInvestment />} />
+            <Route path="/wealth/add/savings" element={<AddSimpleInvestment />} />
             <Route path="/wealth/:type/:id" element={<InvestmentDetail />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/goals/:id" element={<GoalDetail />} />

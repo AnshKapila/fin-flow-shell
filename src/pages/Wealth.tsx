@@ -1,22 +1,32 @@
-import { Outlet, Navigate, useLocation } from "react-router-dom";
+import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AssetTypeSlider } from "@/components/wealth/AssetTypeSlider";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useState } from "react";
-import { AddInvestmentModal } from "@/components/modals/AddInvestmentModal";
+import { AssetTypeSelectionModal } from "@/components/modals/AssetTypeSelectionModal";
 
 export default function WealthPage() {
   const location = useLocation();
-  const [showAddModal, setShowAddModal] = useState(false);
+  const navigate = useNavigate();
+  const [showTypeModal, setShowTypeModal] = useState(false);
 
   // Redirect to stocks if on base /wealth path
   if (location.pathname === "/wealth") {
     return <Navigate to="/wealth/stocks" replace />;
   }
 
+  const handleSelectAssetType = (type: string) => {
+    // Navigate to the appropriate add screen based on type
+    if (type === "stocks" || type === "mutual-funds") {
+      navigate(`/wealth/add/${type}`);
+    } else {
+      navigate(`/wealth/add/${type}`);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Wealth" showBack showNotification />
+      <PageHeader title="Wealth" showNotification />
       <AssetTypeSlider />
       
       <div className="px-4 py-4">
@@ -25,12 +35,13 @@ export default function WealthPage() {
 
       <FloatingActionButton 
         label="Add Investment" 
-        onClick={() => setShowAddModal(true)} 
+        onClick={() => setShowTypeModal(true)} 
       />
 
-      <AddInvestmentModal 
-        open={showAddModal} 
-        onOpenChange={setShowAddModal} 
+      <AssetTypeSelectionModal 
+        open={showTypeModal} 
+        onOpenChange={setShowTypeModal}
+        onSelectType={handleSelectAssetType}
       />
     </div>
   );
