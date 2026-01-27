@@ -7,7 +7,8 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { ListCard } from "@/components/ui/list-card";
 import { AddGoalModal } from "@/components/modals/AddGoalModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
-import { mockGoals, formatCurrency } from "@/data/mockData";
+import { useGoals } from "@/hooks/useGoals";
+import { formatCurrency } from "@/data/mockData";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,30 +34,53 @@ export default function GoalsPage() {
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("ending-soon");
 
+  const { goals, isLoading, deleteGoal } = useGoals();
+
   const handleDelete = (goalId: string) => {
-    setSelectedGoal(goalId);
+    setSelectedGoalId(goalId);
     setShowDeleteModal(true);
   };
 
   const confirmDelete = () => {
-    console.log("Deleting goal:", selectedGoal);
+    if (selectedGoalId) {
+      deleteGoal.mutate(selectedGoalId);
+    }
     setShowDeleteModal(false);
-    setSelectedGoal(null);
+    setSelectedGoalId(null);
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      VEHICLE: "text-primary",
-      TRAVEL: "text-primary",
-      LIFESTYLE: "text-primary",
-      EMERGENCY: "text-fintrack-gold",
-      RETIREMENT: "text-fintrack-green",
-    };
-    return colors[category] || "text-primary";
-  };
+  // Sort goals based on selected option
+  const sortedGoals = [...goals].sort((a, b) => {
+    switch (sortBy) {
+      case "highest-target":
+        return b.target_amount - a.target_amount;
+      case "most-collected":
+        return b.current_amount - a.current_amount;
+      case "least-collected":
+        return a.current_amount - b.current_amount;
+      case "ending-soon":
+      default:
+        // Sort by deadline (nulls last)
+        if (!a.deadline && !b.deadline) return 0;
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <div className="animate-fade-in pb-32">
+        <PageHeader title="Goals" subtitle="Track what you're saving for" />
+        <div className="px-4 flex items-center justify-center py-12">
+          <div className="animate-pulse text-muted-foreground">Loading goals...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in pb-32">
@@ -85,71 +109,76 @@ export default function GoalsPage() {
         </div>
 
         {/* Goals List */}
-        <div className="space-y-4">
-          {mockGoals.map((goal) => {
-            const percent = Math.round((goal.savedAmount / goal.targetAmount) * 100);
-            
-            return (
-              <ListCard 
-                key={goal.id}
-                onClick={() => navigate(`/goals/${goal.id}`)}
-                className="cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <span className={`text-xs font-semibold uppercase tracking-wide ${getCategoryColor(goal.category)}`}>
-                      {goal.category}
+        {sortedGoals.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No goals yet. Create your first goal!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sortedGoals.map((goal) => {
+              const percent = goal.target_amount > 0 
+                ? Math.round((goal.current_amount / goal.target_amount) * 100)
+                : 0;
+              
+              return (
+                <ListCard 
+                  key={goal.id}
+                  onClick={() => navigate(`/goals/${goal.id}`)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">{goal.name}</h3>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/goals/${goal.id}/edit`); }}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => { e.stopPropagation(); handleDelete(goal.id); }}
+                          className="text-destructive"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">
+                      {formatCurrency(goal.current_amount)} of {formatCurrency(goal.target_amount)}
+                    </p>
+                    <span className={`font-semibold ${percent >= 50 ? "text-fintrack-green" : "text-primary"}`}>
+                      {percent}%
                     </span>
-                    <h3 className="text-lg font-semibold text-foreground mt-1">{goal.name}</h3>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button 
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/goals/${goal.id}/edit`); }}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={(e) => { e.stopPropagation(); handleDelete(goal.id); }}
-                        className="text-destructive"
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-muted-foreground">
-                    {formatCurrency(goal.savedAmount)} of {formatCurrency(goal.targetAmount)}
-                  </p>
-                  <span className={`font-semibold ${percent >= 50 ? "text-fintrack-green" : "text-primary"}`}>
-                    {percent}%
-                  </span>
-                </div>
+                  <ProgressBar 
+                    value={goal.current_amount} 
+                    max={goal.target_amount}
+                    variant={percent >= 50 ? "blue" : "default"}
+                  />
 
-                <ProgressBar 
-                  value={goal.savedAmount} 
-                  max={goal.targetAmount}
-                  variant={percent >= 50 ? "blue" : "default"}
-                />
-
-                {goal.deadline && (
-                  <div className="flex items-center gap-1.5 mt-3 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Ends in {goal.deadline}</span>
-                  </div>
-                )}
-              </ListCard>
-            );
-          })}
-        </div>
+                  {goal.deadline && (
+                    <div className="flex items-center gap-1.5 mt-3 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>Deadline: {new Date(goal.deadline).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </ListCard>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <FloatingActionButton 
