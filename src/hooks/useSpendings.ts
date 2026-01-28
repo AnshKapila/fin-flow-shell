@@ -10,6 +10,7 @@ export interface Spending {
   amount: number;
   frequency_type: string;
   frequency_interval: number | null;
+  frequency_unit: string | null;
   start_date: string | null;
   icon: string | null;
   icon_bg: string | null;
@@ -21,6 +22,7 @@ export interface CreateSpendingInput {
   amount: number;
   frequency_type: string;
   frequency_interval?: number | null;
+  frequency_unit?: string | null;
   start_date?: string | null;
   icon?: string;
   icon_bg?: string;
@@ -32,6 +34,7 @@ export interface UpdateSpendingInput {
   amount?: number;
   frequency_type?: string;
   frequency_interval?: number | null;
+  frequency_unit?: string | null;
   start_date?: string | null;
   icon?: string;
   icon_bg?: string;
@@ -77,7 +80,8 @@ export function useSpendings() {
           name: input.name,
           amount: input.amount,
           frequency_type: input.frequency_type,
-          frequency_interval: input.frequency_interval || null,
+          frequency_interval: input.frequency_type === "custom" ? input.frequency_interval : null,
+          frequency_unit: input.frequency_type === "custom" ? input.frequency_unit : null,
           start_date: input.start_date || null,
           icon: input.icon || "Home",
           icon_bg: input.icon_bg || "bg-blue-500",
@@ -162,14 +166,25 @@ export function useSpendings() {
   // Calculate monthly total from frequency
   const getMonthlyTotal = () => {
     return spendingsQuery.data?.reduce((sum, spending) => {
-      if (spending.frequency_type === "monthly") {
+      if (spending.frequency_type === "one_time") {
+        return sum; // One-time expenses don't contribute to monthly total
+      } else if (spending.frequency_type === "monthly") {
         return sum + spending.amount;
-      } else if (spending.frequency_type === "yearly") {
-        return sum + spending.amount / 12;
-      } else if (spending.frequency_type === "weekly") {
-        return sum + spending.amount * 4.33;
-      } else if (spending.frequency_type === "daily") {
-        return sum + spending.amount * 30;
+      } else if (spending.frequency_type === "custom" && spending.frequency_interval && spending.frequency_unit) {
+        // Convert custom frequency to monthly equivalent
+        const interval = spending.frequency_interval;
+        switch (spending.frequency_unit) {
+          case "day":
+            return sum + (spending.amount * 30 / interval);
+          case "week":
+            return sum + (spending.amount * 4.33 / interval);
+          case "month":
+            return sum + (spending.amount / interval);
+          case "year":
+            return sum + (spending.amount / (interval * 12));
+          default:
+            return sum;
+        }
       }
       return sum;
     }, 0) || 0;

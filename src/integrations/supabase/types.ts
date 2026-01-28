@@ -50,6 +50,7 @@ export type Database = {
           created_at: string
           frequency_interval: number | null
           frequency_type: string
+          frequency_unit: string | null
           icon: string | null
           icon_bg: string | null
           id: string
@@ -62,6 +63,7 @@ export type Database = {
           created_at?: string
           frequency_interval?: number | null
           frequency_type?: string
+          frequency_unit?: string | null
           icon?: string | null
           icon_bg?: string | null
           id?: string
@@ -74,6 +76,7 @@ export type Database = {
           created_at?: string
           frequency_interval?: number | null
           frequency_type?: string
+          frequency_unit?: string | null
           icon?: string | null
           icon_bg?: string | null
           id?: string

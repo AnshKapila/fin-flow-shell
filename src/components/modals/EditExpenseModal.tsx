@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,11 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSpendings } from "@/hooks/useSpendings";
+import { useSpendings, Spending } from "@/hooks/useSpendings";
 
-interface AddExpenseModalProps {
+interface EditExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  expense: Spending | null;
 }
 
 const frequencies = [
@@ -46,7 +47,7 @@ const icons = [
   { id: "ShoppingBag", label: "🛍️ Shopping", bg: "bg-red-500" },
 ];
 
-export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
+export function EditExpenseModal({ open, onOpenChange, expense }: EditExpenseModalProps) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState("monthly");
@@ -54,14 +55,28 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const [frequencyUnit, setFrequencyUnit] = useState("month");
   const [icon, setIcon] = useState("Home");
 
-  const { createSpending } = useSpendings();
+  const { updateSpending } = useSpendings();
+
+  useEffect(() => {
+    if (expense) {
+      setName(expense.name);
+      setAmount(expense.amount.toString());
+      setFrequency(expense.frequency_type);
+      setFrequencyInterval(expense.frequency_interval?.toString() || "1");
+      setFrequencyUnit(expense.frequency_unit || "month");
+      setIcon(expense.icon || "Home");
+    }
+  }, [expense]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!expense) return;
+    
     const selectedIcon = icons.find(i => i.id === icon);
     
-    await createSpending.mutateAsync({
+    await updateSpending.mutateAsync({
+      id: expense.id,
       name,
       amount: parseFloat(amount) || 0,
       frequency_type: frequency,
@@ -72,30 +87,20 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
     });
     
     onOpenChange(false);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setName("");
-    setAmount("");
-    setFrequency("monthly");
-    setFrequencyInterval("1");
-    setFrequencyUnit("month");
-    setIcon("Home");
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[90%] rounded-2xl bg-card border-border sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Add Expense</DialogTitle>
+          <DialogTitle className="text-foreground">Edit Expense</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="expense-name" className="text-muted-foreground">Expense Name</Label>
+            <Label htmlFor="edit-expense-name" className="text-muted-foreground">Expense Name</Label>
             <Input
-              id="expense-name"
+              id="edit-expense-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Rent"
@@ -105,7 +110,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="icon" className="text-muted-foreground">Category Icon</Label>
+            <Label htmlFor="edit-icon" className="text-muted-foreground">Category Icon</Label>
             <Select value={icon} onValueChange={setIcon}>
               <SelectTrigger className="bg-muted border-border">
                 <SelectValue placeholder="Select icon" />
@@ -122,9 +127,9 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="amount" className="text-muted-foreground">Amount</Label>
+              <Label htmlFor="edit-amount" className="text-muted-foreground">Amount</Label>
               <Input
-                id="amount"
+                id="edit-amount"
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -135,7 +140,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="frequency" className="text-muted-foreground">Frequency</Label>
+              <Label htmlFor="edit-frequency" className="text-muted-foreground">Frequency</Label>
               <Select value={frequency} onValueChange={setFrequency}>
                 <SelectTrigger className="bg-muted border-border">
                   <SelectValue placeholder="Select" />
@@ -154,9 +159,9 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
           {frequency === "custom" && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="frequency-interval" className="text-muted-foreground">Every</Label>
+                <Label htmlFor="edit-frequency-interval" className="text-muted-foreground">Every</Label>
                 <Input
-                  id="frequency-interval"
+                  id="edit-frequency-interval"
                   type="number"
                   value={frequencyInterval}
                   onChange={(e) => setFrequencyInterval(e.target.value)}
@@ -167,7 +172,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="frequency-unit" className="text-muted-foreground">Unit</Label>
+                <Label htmlFor="edit-frequency-unit" className="text-muted-foreground">Unit</Label>
                 <Select value={frequencyUnit} onValueChange={setFrequencyUnit}>
                   <SelectTrigger className="bg-muted border-border">
                     <SelectValue placeholder="Select" />
@@ -196,9 +201,9 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             <Button 
               type="submit" 
               className="flex-1"
-              disabled={createSpending.isPending}
+              disabled={updateSpending.isPending}
             >
-              {createSpending.isPending ? "Adding..." : "Add Expense"}
+              {updateSpending.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
