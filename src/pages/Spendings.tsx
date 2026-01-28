@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Home, Laptop, Dumbbell, Wifi, Car, Tv, Zap } from "lucide-react";
+import { Home, Laptop, Dumbbell, Wifi, Car, Tv, Zap, ShoppingBag, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ListCardWithIcon } from "@/components/ui/list-card";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { AddExpenseModal } from "@/components/modals/AddExpenseModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
-import { mockExpenses, formatCurrency, getMonthlyExpenses } from "@/data/mockData";
+import { useSpendings, Spending } from "@/hooks/useSpendings";
+import { formatCurrency } from "@/data/mockData";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Home,
@@ -16,6 +17,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Car,
   Tv,
   Zap,
+  ShoppingBag,
 };
 
 export default function SpendingsPage() {
@@ -23,13 +25,11 @@ export default function SpendingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<string | null>(null);
 
-  const monthlyTotal = mockExpenses
-    .filter(e => e.frequency === "monthly")
-    .reduce((sum, e) => sum + e.amount, 0);
+  const { spendings, isLoading, monthlyTotal, deleteSpending } = useSpendings();
 
   const handleEdit = (expenseId: string) => {
     console.log("Edit expense:", expenseId);
-    // Would open edit modal
+    // Would open edit modal - can be implemented later
   };
 
   const handleDelete = (expenseId: string) => {
@@ -37,18 +37,32 @@ export default function SpendingsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
-    console.log("Deleting expense:", selectedExpense);
+  const confirmDelete = async () => {
+    if (selectedExpense) {
+      await deleteSpending.mutateAsync(selectedExpense);
+    }
     setShowDeleteModal(false);
     setSelectedExpense(null);
   };
 
-  const getFrequencyLabel = (expense: typeof mockExpenses[0]) => {
-    if (expense.nextOccurrence) {
-      return `Next: ${expense.nextOccurrence}`;
-    }
-    return expense.frequency.charAt(0).toUpperCase() + expense.frequency.slice(1);
+  const getFrequencyLabel = (spending: Spending) => {
+    const labels: Record<string, string> = {
+      "one-time": "One-time",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+    };
+    return labels[spending.frequency_type] || spending.frequency_type;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in pb-32">
@@ -69,7 +83,7 @@ export default function SpendingsPage() {
               SUMMARY
             </span>
             <span className="ml-2 text-sm text-primary-foreground/70">
-              Calculated from {mockExpenses.length} recurring items
+              Calculated from {spendings.length} recurring items
             </span>
           </div>
         </SummaryCard>
@@ -77,24 +91,30 @@ export default function SpendingsPage() {
         {/* Expenses List */}
         <section>
           <h2 className="text-lg font-semibold text-foreground mb-4">Recurring Expenses</h2>
-          <div className="space-y-3">
-            {mockExpenses.map((expense) => {
-              const IconComponent = iconMap[expense.icon] || Home;
-              
-              return (
-                <ListCardWithIcon
-                  key={expense.id}
-                  icon={<IconComponent className="h-5 w-5 text-primary-foreground" />}
-                  iconBg={expense.iconBg}
-                  title={expense.name}
-                  subtitle={getFrequencyLabel(expense)}
-                  value={formatCurrency(expense.amount)}
-                  onEdit={() => handleEdit(expense.id)}
-                  onDelete={() => handleDelete(expense.id)}
-                />
-              );
-            })}
-          </div>
+          {spendings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No expenses yet. Add your first expense!
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {spendings.map((spending) => {
+                const IconComponent = iconMap[spending.icon || "Home"] || Home;
+                
+                return (
+                  <ListCardWithIcon
+                    key={spending.id}
+                    icon={<IconComponent className="h-5 w-5 text-primary-foreground" />}
+                    iconBg={spending.icon_bg || "bg-blue-500"}
+                    title={spending.name}
+                    subtitle={getFrequencyLabel(spending)}
+                    value={formatCurrency(spending.amount)}
+                    onEdit={() => handleEdit(spending.id)}
+                    onDelete={() => handleDelete(spending.id)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
 
