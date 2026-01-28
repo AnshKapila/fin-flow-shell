@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSpendings } from "@/hooks/useSpendings";
 
 interface AddExpenseModalProps {
   open: boolean;
@@ -30,26 +31,37 @@ const frequencies = [
 ];
 
 const icons = [
-  { id: "Home", label: "🏠 Home" },
-  { id: "Car", label: "🚗 Car" },
-  { id: "Laptop", label: "💻 Laptop" },
-  { id: "Wifi", label: "📶 Internet" },
-  { id: "Zap", label: "⚡ Electricity" },
-  { id: "Tv", label: "📺 Entertainment" },
-  { id: "Dumbbell", label: "🏋️ Fitness" },
-  { id: "ShoppingBag", label: "🛍️ Shopping" },
+  { id: "Home", label: "🏠 Home", bg: "bg-blue-500" },
+  { id: "Car", label: "🚗 Car", bg: "bg-green-500" },
+  { id: "Laptop", label: "💻 Laptop", bg: "bg-purple-500" },
+  { id: "Wifi", label: "📶 Internet", bg: "bg-cyan-500" },
+  { id: "Zap", label: "⚡ Electricity", bg: "bg-yellow-500" },
+  { id: "Tv", label: "📺 Entertainment", bg: "bg-pink-500" },
+  { id: "Dumbbell", label: "🏋️ Fitness", bg: "bg-orange-500" },
+  { id: "ShoppingBag", label: "🛍️ Shopping", bg: "bg-red-500" },
 ];
 
 export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [frequency, setFrequency] = useState("");
-  const [icon, setIcon] = useState("");
+  const [frequency, setFrequency] = useState("monthly");
+  const [icon, setIcon] = useState("Home");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { createSpending } = useSpendings();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock save
-    console.log("Adding expense:", { name, amount, frequency, icon });
+    
+    const selectedIcon = icons.find(i => i.id === icon);
+    
+    await createSpending.mutateAsync({
+      name,
+      amount: parseFloat(amount) || 0,
+      frequency_type: frequency,
+      icon: icon,
+      icon_bg: selectedIcon?.bg || "bg-blue-500",
+    });
+    
     onOpenChange(false);
     resetForm();
   };
@@ -57,8 +69,8 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const resetForm = () => {
     setName("");
     setAmount("");
-    setFrequency("");
-    setIcon("");
+    setFrequency("monthly");
+    setIcon("Home");
   };
 
   return (
@@ -77,6 +89,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Rent"
               className="bg-muted border-border"
+              required
             />
           </div>
 
@@ -106,6 +119,8 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="₹0"
                 className="bg-muted border-border"
+                required
+                min="1"
               />
             </div>
             <div className="space-y-2">
@@ -134,8 +149,12 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
-              Add Expense
+            <Button 
+              type="submit" 
+              className="flex-1"
+              disabled={createSpending.isPending}
+            >
+              {createSpending.isPending ? "Adding..." : "Add Expense"}
             </Button>
           </div>
         </form>

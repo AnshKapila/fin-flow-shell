@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      spendings: {
+        Row: {
+          amount: number
+          created_at: string
+          frequency_interval: number | null
+          frequency_type: string
+          icon: string | null
+          icon_bg: string | null
+          id: string
+          name: string
+          start_date: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          frequency_interval?: number | null
+          frequency_type?: string
+          icon?: string | null
+          icon_bg?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          frequency_interval?: number | null
+          frequency_type?: string
+          icon?: string | null
+          icon_bg?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
