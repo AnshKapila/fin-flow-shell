@@ -5,6 +5,7 @@ import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary
 import { ListCardWithIcon } from "@/components/ui/list-card";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { AddExpenseModal } from "@/components/modals/AddExpenseModal";
+import { EditExpenseModal } from "@/components/modals/EditExpenseModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { useSpendings, Spending } from "@/hooks/useSpendings";
 import { formatCurrency } from "@/data/mockData";
@@ -22,38 +23,54 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export default function SpendingsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<string | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<Spending | null>(null);
 
   const { spendings, isLoading, monthlyTotal, deleteSpending } = useSpendings();
 
-  const handleEdit = (expenseId: string) => {
-    console.log("Edit expense:", expenseId);
-    // Would open edit modal - can be implemented later
+  const handleEdit = (expense: Spending) => {
+    setSelectedExpense(expense);
+    setShowEditModal(true);
   };
 
-  const handleDelete = (expenseId: string) => {
-    setSelectedExpense(expenseId);
+  const handleDelete = (expense: Spending) => {
+    setSelectedExpense(expense);
     setShowDeleteModal(true);
   };
 
   const confirmDelete = async () => {
     if (selectedExpense) {
-      await deleteSpending.mutateAsync(selectedExpense);
+      await deleteSpending.mutateAsync(selectedExpense.id);
     }
     setShowDeleteModal(false);
     setSelectedExpense(null);
   };
 
   const getFrequencyLabel = (spending: Spending) => {
-    const labels: Record<string, string> = {
+    if (spending.frequency_type === "one_time") {
+      return "One-time";
+    } else if (spending.frequency_type === "monthly") {
+      return "Monthly";
+    } else if (spending.frequency_type === "custom" && spending.frequency_interval && spending.frequency_unit) {
+      const interval = spending.frequency_interval;
+      const unitLabels: Record<string, string> = {
+        day: interval === 1 ? "day" : "days",
+        week: interval === 1 ? "week" : "weeks",
+        month: interval === 1 ? "month" : "months",
+        year: interval === 1 ? "year" : "years",
+      };
+      const unit = unitLabels[spending.frequency_unit] || spending.frequency_unit;
+      return `Every ${interval} ${unit}`;
+    }
+    // Fallback for legacy data
+    const legacyLabels: Record<string, string> = {
       "one-time": "One-time",
       "daily": "Daily",
       "weekly": "Weekly",
-      "monthly": "Monthly",
       "yearly": "Yearly",
     };
-    return labels[spending.frequency_type] || spending.frequency_type;
+    return legacyLabels[spending.frequency_type] || spending.frequency_type;
   };
 
   if (isLoading) {
@@ -83,14 +100,14 @@ export default function SpendingsPage() {
               SUMMARY
             </span>
             <span className="ml-2 text-sm text-primary-foreground/70">
-              Calculated from {spendings.length} recurring items
+              Calculated from {spendings.filter(s => s.frequency_type !== "one_time").length} recurring items
             </span>
           </div>
         </SummaryCard>
 
         {/* Expenses List */}
         <section>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Recurring Expenses</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Expenses</h2>
           {spendings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No expenses yet. Add your first expense!
@@ -108,8 +125,8 @@ export default function SpendingsPage() {
                     title={spending.name}
                     subtitle={getFrequencyLabel(spending)}
                     value={formatCurrency(spending.amount)}
-                    onEdit={() => handleEdit(spending.id)}
-                    onDelete={() => handleDelete(spending.id)}
+                    onEdit={() => handleEdit(spending)}
+                    onDelete={() => handleDelete(spending)}
                   />
                 );
               })}
@@ -126,6 +143,12 @@ export default function SpendingsPage() {
       <AddExpenseModal 
         open={showAddModal} 
         onOpenChange={setShowAddModal} 
+      />
+
+      <EditExpenseModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        expense={selectedExpense}
       />
 
       <DeleteConfirmModal
