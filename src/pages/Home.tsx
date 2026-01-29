@@ -1,25 +1,85 @@
-import { User, Bell, TrendingUp, Lightbulb, ChevronRight } from "lucide-react";
+import { User, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { ListCard } from "@/components/ui/list-card";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGoals } from "@/hooks/useGoals";
+import { useSpendings } from "@/hooks/useSpendings";
+import { featureFlags } from "@/lib/featureFlags";
 import { 
-  mockUser, 
-  mockGoals, 
   formatCurrency, 
   getNetWorth, 
   getTotalInvested,
-  getMonthlyExpenses,
 } from "@/data/mockData";
 
+// Helper to get user display name
+function getUserDisplayName(user: { email?: string; user_metadata?: { full_name?: string; display_name?: string; name?: string } } | null): string {
+  if (!user) return "User";
+  
+  // Priority 1: Full name from metadata
+  const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
+  if (fullName) return fullName;
+  
+  // Priority 2: Display name from metadata
+  const displayName = user.user_metadata?.display_name;
+  if (displayName) return displayName;
+  
+  // Priority 3: Email prefix (before @)
+  if (user.email) {
+    return user.email.split("@")[0];
+  }
+  
+  return "User";
+}
+
+// Helper to format currency for display
+function formatDisplayCurrency(amount: number, compact: boolean = false): string {
+  if (compact) {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    } else if (amount >= 1000) {
+      return `₹${(amount / 1000).toFixed(1)}k`;
+    }
+  }
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
+
+// Get time-based greeting
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function HomePage() {
+  const { user } = useAuth();
+  const { goals, isLoading: goalsLoading } = useGoals();
+  const { spendings, monthlyTotal, isLoading: spendingsLoading } = useSpendings();
+  
   const netWorth = getNetWorth();
   const totalInvested = getTotalInvested();
-  const monthlyExpenses = getMonthlyExpenses();
-  const monthlyIncome = 520000 / 100; // Mock: ₹5.2k monthly income shown in screenshot
   
-  // Show top 2 goals
-  const topGoals = mockGoals.slice(0, 2);
+  // Get top 2 active goals (those not yet completed)
+  const activeGoals = goals
+    .filter(goal => goal.current_amount < goal.target_amount)
+    .slice(0, 2);
+  
+  // Calculate spending data for Month Flow
+  const monthlyExpense = monthlyTotal;
+  // Mock income for now - will be replaced when income tracking is added
+  const monthlyIncome = 52000;
+  const savingsRate = monthlyIncome > 0 
+    ? Math.round(((monthlyIncome - monthlyExpense) / monthlyIncome) * 100) 
+    : 0;
+  const expensePercentage = monthlyIncome > 0 
+    ? Math.min(100, Math.round((monthlyExpense / monthlyIncome) * 100)) 
+    : 0;
+
+  const displayName = getUserDisplayName(user);
+  const greeting = getGreeting();
 
   return (
     <div className="animate-fade-in">
@@ -30,14 +90,11 @@ export default function HomePage() {
             <User className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Good evening,</p>
-            <p className="font-semibold text-foreground">{mockUser.name}</p>
+            <p className="text-sm text-muted-foreground">{greeting},</p>
+            <p className="font-semibold text-foreground">{displayName}</p>
           </div>
         </div>
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-destructive" />
-        </button>
+        <NotificationBell />
       </header>
 
       <div className="space-y-6 px-4 pb-8">
@@ -105,35 +162,48 @@ export default function HomePage() {
             </div>
           </ListCard>
 
-          {/* Month Flow */}
+          {/* Month Flow - Connected to real spending data */}
           <ListCard className="p-4">
             <p className="mb-3 text-sm font-medium text-muted-foreground">Month Flow</p>
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm text-muted-foreground">Income</span>
-                  <span className="font-semibold text-fintrack-green">₹5.2k</span>
+            {spendingsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <span className="text-sm text-muted-foreground">Loading...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-muted-foreground">Income</span>
+                    <span className="font-semibold text-fintrack-green">
+                      {formatDisplayCurrency(monthlyIncome, true)}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-fintrack-green" style={{ width: "100%" }} />
+                  </div>
                 </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-fintrack-green" style={{ width: "100%" }} />
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-muted-foreground">Expense</span>
+                    <span className="font-semibold text-fintrack-red-soft">
+                      {formatDisplayCurrency(monthlyExpense, true)}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-fintrack-red-soft" 
+                      style={{ width: `${expensePercentage}%` }} 
+                    />
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Savings Rate:</span>
+                    <span className="font-semibold text-foreground">{savingsRate}%</span>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm text-muted-foreground">Expense</span>
-                  <span className="font-semibold text-fintrack-red-soft">₹3.1k</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-fintrack-red-soft" style={{ width: "60%" }} />
-                </div>
-              </div>
-              <div className="pt-2 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Savings Rate:</span>
-                  <span className="font-semibold text-foreground">40%</span>
-                </div>
-              </div>
-            </div>
+            )}
           </ListCard>
         </div>
 
@@ -164,7 +234,7 @@ export default function HomePage() {
           </ListCard>
         </section>
 
-        {/* Goals */}
+        {/* Goals - Connected to real data */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-foreground">Goals</h2>
@@ -172,51 +242,69 @@ export default function HomePage() {
               View More
             </Link>
           </div>
-          <div className="space-y-3">
-            {topGoals.map((goal) => {
-              const percent = Math.round((goal.savedAmount / goal.targetAmount) * 100);
-              return (
-                <ListCard key={goal.id}>
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-fintrack-gold/20">
-                      <span className="text-lg">
-                        {goal.category === "VEHICLE" ? "🚗" : goal.category === "EMERGENCY" ? "🛡️" : "🏠"}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-foreground">{goal.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatCurrency(goal.savedAmount / 100, true)} / {formatCurrency(goal.targetAmount / 100, true)}
-                        </p>
+          {goalsLoading ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              Loading goals...
+            </div>
+          ) : activeGoals.length === 0 ? (
+            <ListCard>
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">No active goals yet</p>
+                <Link to="/goals" className="text-sm font-medium text-primary mt-1 inline-block">
+                  Create your first goal
+                </Link>
+              </div>
+            </ListCard>
+          ) : (
+            <div className="space-y-3">
+              {activeGoals.map((goal) => {
+                const percent = Math.round((goal.current_amount / goal.target_amount) * 100);
+                return (
+                  <ListCard key={goal.id}>
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-fintrack-gold/20">
+                        <span className="text-lg">🎯</span>
                       </div>
-                      <ProgressBar 
-                        value={goal.savedAmount} 
-                        max={goal.targetAmount} 
-                        variant={goal.category === "EMERGENCY" ? "gold" : "blue"}
-                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-foreground">{goal.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDisplayCurrency(goal.current_amount, true)} / {formatDisplayCurrency(goal.target_amount, true)}
+                          </p>
+                        </div>
+                        <ProgressBar 
+                          value={goal.current_amount} 
+                          max={goal.target_amount} 
+                          variant="blue"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </ListCard>
-              );
-            })}
-          </div>
+                  </ListCard>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        {/* Insight Card */}
-        <ListCard className="bg-fintrack-card-elevated">
-          <div className="flex gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-fintrack-gold/20">
-              <Lightbulb className="h-5 w-5 text-fintrack-gold" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold text-fintrack-gold">Insight </span>
-                Increasing your monthly savings by just ₹50 could help you reach your car goal 2 months early.
-              </p>
-            </div>
-          </div>
-        </ListCard>
+        {/* Insights Section - Temporarily disabled via feature flag */}
+        {featureFlags.showInsights && (
+          <section>
+            {/* Insight Card - Will be re-enabled when user-specific data is available */}
+            <ListCard className="bg-fintrack-card-elevated">
+              <div className="flex gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-fintrack-gold/20">
+                  {/* Lightbulb icon will go here */}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold text-fintrack-gold">Insight </span>
+                    Personalized insights will appear here based on your financial data.
+                  </p>
+                </div>
+              </div>
+            </ListCard>
+          </section>
+        )}
       </div>
     </div>
   );
