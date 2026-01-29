@@ -4,36 +4,15 @@ import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { ListCard } from "@/components/ui/list-card";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import { useSpendings } from "@/hooks/useSpendings";
+import { useProfile } from "@/hooks/useProfile";
 import { featureFlags } from "@/lib/featureFlags";
 import { 
   formatCurrency, 
   getNetWorth, 
   getTotalInvested,
 } from "@/data/mockData";
-
-// Helper to get user display name
-function getUserDisplayName(user: { email?: string; user_metadata?: { full_name?: string; display_name?: string; name?: string } } | null): string {
-  if (!user) return "User";
-  
-  // Priority 1: Full name from metadata
-  const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
-  if (fullName) return fullName;
-  
-  // Priority 2: Display name from metadata
-  const displayName = user.user_metadata?.display_name;
-  if (displayName) return displayName;
-  
-  // Priority 3: Email prefix (before @)
-  if (user.email) {
-    return user.email.split("@")[0];
-  }
-  
-  return "User";
-}
-
 // Helper to format currency for display
 function formatDisplayCurrency(amount: number, compact: boolean = false): string {
   if (compact) {
@@ -55,9 +34,9 @@ function getGreeting(): string {
 }
 
 export default function HomePage() {
-  const { user } = useAuth();
   const { goals, isLoading: goalsLoading } = useGoals();
   const { spendings, monthlyTotal, isLoading: spendingsLoading } = useSpendings();
+  const { getDisplayName } = useProfile();
   
   const netWorth = getNetWorth();
   const totalInvested = getTotalInvested();
@@ -78,17 +57,19 @@ export default function HomePage() {
     ? Math.min(100, Math.round((monthlyExpense / monthlyIncome) * 100)) 
     : 0;
 
-  const displayName = getUserDisplayName(user);
+  const displayName = getDisplayName();
   const greeting = getGreeting();
-
   return (
     <div className="animate-fade-in">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <Link 
+            to="/profile" 
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors"
+          >
             <User className="h-5 w-5 text-muted-foreground" />
-          </div>
+          </Link>
           <div>
             <p className="text-sm text-muted-foreground">{greeting},</p>
             <p className="font-semibold text-foreground">{displayName}</p>
