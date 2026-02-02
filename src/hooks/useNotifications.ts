@@ -2,10 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export type NotificationType = 
+  | "goal_reminder" 
+  | "spending_threshold" 
+  | "upcoming_expense"
+  | "wealth_added"
+  | "wealth_updated"
+  | "wealth_deleted"
+  | "networth_change";
+
 export interface Notification {
   id: string;
   user_id: string;
-  type: "goal_reminder" | "spending_threshold" | "upcoming_expense";
+  type: NotificationType;
   title: string;
   message: string;
   is_read: boolean;
@@ -14,7 +23,7 @@ export interface Notification {
 }
 
 export interface CreateNotificationInput {
-  type: "goal_reminder" | "spending_threshold" | "upcoming_expense";
+  type: NotificationType;
   title: string;
   message: string;
   related_id?: string | null;

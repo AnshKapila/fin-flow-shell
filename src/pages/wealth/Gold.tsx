@@ -1,13 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { HoldingCard } from "@/components/ui/list-card";
-import { getInvestmentsByType, getTotalByType, formatCurrency, formatPercent } from "@/data/mockData";
+import { useInvestments } from "@/hooks/useInvestments";
+import { formatCurrency, formatPercent } from "@/data/mockData";
 
 export default function GoldPage() {
   const navigate = useNavigate();
+  const { getInvestmentsByType, getTotalByType, getReturnsPercent, isLoading } = useInvestments();
+  
   const gold = getInvestmentsByType("gold");
   const totals = getTotalByType("gold");
-  const returnsPercent = totals.invested > 0 ? ((totals.returns / totals.invested) * 100) : 0;
+  const returnsPercent = getReturnsPercent(totals.invested, totals.returns);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <span className="text-muted-foreground">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in">
@@ -29,7 +40,7 @@ export default function GoldPage() {
               <span className="text-lg font-semibold text-primary-foreground">
                 {formatCurrency(totals.returns)}
               </span>
-              {returnsPercent > 0 && (
+              {totals.invested > 0 && returnsPercent > 0 && (
                 <span className="rounded-full bg-fintrack-green px-2 py-0.5 text-xs font-bold text-primary-foreground">
                   ↑ {formatPercent(returnsPercent)}
                 </span>
@@ -42,20 +53,32 @@ export default function GoldPage() {
       {/* Holdings List */}
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-4">Your Gold Holdings</h2>
-        <div className="divide-y divide-border">
-          {gold.map((item) => (
-            <HoldingCard
-              key={item.id}
-              name={item.name}
-              subtitle={item.interestRate ? `${item.interestRate}% p.a. • Matures ${item.maturityDate}` : "Digital Gold"}
-              value={formatCurrency(item.currentValue)}
-              invested={formatCurrency(item.investedValue)}
-              returns={formatPercent(item.returnsPercent)}
-              isPositive={item.returnsPercent >= 0}
-              onClick={() => navigate(`/wealth/gold/${item.id}`)}
-            />
-          ))}
-        </div>
+        {gold.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No gold holdings added yet</p>
+            <p className="text-sm mt-1">Tap the + button to add your first gold investment</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {gold.map((item) => {
+              const itemReturnsPercent = item.invested_value > 0 
+                ? ((item.current_value - item.invested_value) / item.invested_value) * 100 
+                : 0;
+              return (
+                <HoldingCard
+                  key={item.id}
+                  name={item.name}
+                  subtitle={item.interest_rate ? `${item.interest_rate}% p.a. • Matures ${item.maturity_date}` : "Digital Gold"}
+                  value={formatCurrency(item.current_value)}
+                  invested={formatCurrency(item.invested_value)}
+                  returns={formatPercent(itemReturnsPercent)}
+                  isPositive={itemReturnsPercent >= 0}
+                  onClick={() => navigate(`/wealth/gold/${item.id}`)}
+                />
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

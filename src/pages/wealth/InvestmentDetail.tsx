@@ -1,39 +1,61 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Pencil, Archive, ChevronRight } from "lucide-react";
+import { Pencil, Archive, ChevronRight, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ListCard } from "@/components/ui/list-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { mockInvestments, mockGoals, formatCurrency, formatPercent } from "@/data/mockData";
+import { useInvestments } from "@/hooks/useInvestments";
+import { useGoals } from "@/hooks/useGoals";
+import { formatCurrency, formatPercent } from "@/data/mockData";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-
-// Mock chart data
-const chartData = [
-  { year: "2020", value: 18000 },
-  { year: "2021", value: 16000 },
-  { year: "2022", value: 19000 },
-  { year: "2023", value: 22000 },
-  { year: "2024", value: 24592 },
-];
+import { useState } from "react";
+import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { toast } from "sonner";
 
 export default function InvestmentDetail() {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const { investments, deleteInvestment, isLoading } = useInvestments();
+  const { goals } = useGoals();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
-  const investment = mockInvestments.find(inv => inv.id === id);
+  const investment = investments.find(inv => inv.id === id);
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <span className="text-muted-foreground">Loading...</span>
+      </div>
+    );
+  }
   
   if (!investment) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-muted-foreground">Investment not found</p>
+        <button 
+          onClick={() => navigate(`/wealth/${type}`)}
+          className="text-primary font-medium"
+        >
+          Go back
+        </button>
       </div>
     );
   }
 
-  const linkedGoals = investment.linkedGoals?.map(lg => {
-    const goal = mockGoals.find(g => g.id === lg.goalId);
-    return goal ? { ...goal, contribution: lg.contribution } : null;
-  }).filter(Boolean);
+  const returnsAmount = Number(investment.current_value) - Number(investment.invested_value);
+  const returnsPercent = investment.invested_value > 0 
+    ? (returnsAmount / Number(investment.invested_value)) * 100 
+    : 0;
+
+  // Generate mock chart data based on investment
+  const chartData = [
+    { year: "2020", value: Number(investment.invested_value) * 0.8 },
+    { year: "2021", value: Number(investment.invested_value) * 0.9 },
+    { year: "2022", value: Number(investment.invested_value) },
+    { year: "2023", value: Number(investment.invested_value) * 1.1 },
+    { year: "2024", value: Number(investment.current_value) },
+  ];
 
   const getTypeName = (t: string) => {
     const names: Record<string, string> = {
@@ -44,6 +66,17 @@ export default function InvestmentDetail() {
       savings: "Savings",
     };
     return names[t] || "Investment";
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteInvestment.mutateAsync(investment.id);
+      toast.success("Investment deleted successfully");
+      navigate(`/wealth/${type}`);
+    } catch (error) {
+      console.error("Failed to delete investment:", error);
+      toast.error("Failed to delete investment");
+    }
   };
 
   return (
@@ -65,9 +98,9 @@ export default function InvestmentDetail() {
                 {investment.category}
               </span>
             )}
-            {investment.riskLevel && (
+            {investment.risk_level && (
               <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                {investment.riskLevel}
+                {investment.risk_level}
               </span>
             )}
           </div>
@@ -77,25 +110,27 @@ export default function InvestmentDetail() {
         <SummaryCard variant="blue">
           <SummaryLabel>Current Value</SummaryLabel>
           <SummaryValue size="2xl" className="mt-1">
-            {formatCurrency(investment.currentValue)}
+            {formatCurrency(investment.current_value)}
           </SummaryValue>
           
           <div className="mt-4 grid grid-cols-2 gap-4 pt-4 border-t border-primary-foreground/20">
             <div>
               <p className="text-sm text-primary-foreground/70">Invested</p>
               <p className="text-lg font-semibold text-primary-foreground">
-                {formatCurrency(investment.investedValue)}
+                {formatCurrency(investment.invested_value)}
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-primary-foreground/70">Abs. Returns</p>
               <div className="flex items-center justify-end gap-2">
                 <span className="text-lg font-semibold text-primary-foreground">
-                  ↗ {formatCurrency(investment.returns)}
+                  {returnsAmount >= 0 ? "↗" : "↘"} {formatCurrency(Math.abs(returnsAmount))}
                 </span>
               </div>
-              <span className="inline-block mt-1 rounded-full bg-fintrack-green px-2 py-0.5 text-xs font-bold text-primary-foreground">
-                {formatPercent(investment.returnsPercent)}
+              <span className={`inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-bold text-primary-foreground ${
+                returnsPercent >= 0 ? "bg-fintrack-green" : "bg-fintrack-red-soft"
+              }`}>
+                {formatPercent(returnsPercent)}
               </span>
             </div>
           </div>
@@ -152,6 +187,31 @@ export default function InvestmentDetail() {
           </ListCard>
         )}
 
+        {/* FD-specific info */}
+        {type === "fd" && investment.maturity_value && (
+          <ListCard>
+            <h3 className="font-semibold text-foreground mb-3">FD Details</h3>
+            <div className="space-y-2 text-sm">
+              {investment.interest_rate && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Interest Rate</span>
+                  <span className="font-medium text-foreground">{investment.interest_rate}% p.a.</span>
+                </div>
+              )}
+              {investment.maturity_date && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Maturity Period</span>
+                  <span className="font-medium text-foreground">{investment.maturity_date}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Maturity Value</span>
+                <span className="font-medium text-foreground">{formatCurrency(investment.maturity_value)}</span>
+              </div>
+            </div>
+          </ListCard>
+        )}
+
         {/* Why I Invested */}
         {investment.notes && (
           <ListCard>
@@ -159,46 +219,12 @@ export default function InvestmentDetail() {
             <p className="text-muted-foreground text-sm leading-relaxed">
               "{investment.notes}"
             </p>
-            {investment.addedDate && (
+            {investment.added_date && (
               <p className="text-xs text-muted-foreground mt-4">
-                📝 Added on {investment.addedDate}
+                📝 Added on {investment.added_date}
               </p>
             )}
           </ListCard>
-        )}
-
-        {/* Linked Goals */}
-        {linkedGoals && linkedGoals.length > 0 && (
-          <section>
-            <h3 className="font-semibold text-foreground mb-3">Linked Goals</h3>
-            {linkedGoals.map((goal: any) => {
-              const percent = Math.round((goal.savedAmount / goal.targetAmount) * 100);
-              return (
-                <ListCard 
-                  key={goal.id}
-                  onClick={() => navigate(`/goals/${goal.id}`)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-fintrack-gold/20">
-                      <span className="text-lg">🎯</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{goal.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Goal: {formatCurrency(goal.targetAmount)} • {formatCurrency(goal.contribution)} contributed
-                      </p>
-                      <ProgressBar value={goal.savedAmount} max={goal.targetAmount} size="sm" className="mt-2" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-primary">{percent}%</span>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </div>
-                </ListCard>
-              );
-            })}
-          </section>
         )}
 
         {/* Actions */}
@@ -207,12 +233,23 @@ export default function InvestmentDetail() {
             <Pencil className="h-4 w-4" />
             Edit Investment
           </button>
-          <button className="flex items-center gap-2 text-muted-foreground font-medium">
-            <Archive className="h-4 w-4" />
-            Archive Investment
+          <button 
+            className="flex items-center gap-2 text-destructive font-medium"
+            onClick={() => setShowDeleteModal(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Investment
           </button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onConfirm={handleDelete}
+        title="Delete Investment"
+        description={`Are you sure you want to delete "${investment.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 }

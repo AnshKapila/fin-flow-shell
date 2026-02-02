@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useInvestments } from "@/hooks/useInvestments";
+import { toast } from "sonner";
 
 // Mock search results for stocks
 const mockStockResults = [
@@ -27,13 +29,18 @@ const mockMutualFundResults = [
 
 export default function AddStockOrMutualFund() {
   const navigate = useNavigate();
-  const { type } = useParams<{ type: string }>();
+  const location = useLocation();
+  const type = location.pathname.includes("stocks") ? "stocks" : "mutual-funds";
   const isStock = type === "stocks";
+  
+  const { createInvestment } = useInvestments();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<typeof mockStockResults[0] | typeof mockMutualFundResults[0] | null>(null);
   const [investedAmount, setInvestedAmount] = useState("");
+  const [currentValue, setCurrentValue] = useState("");
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const mockResults = isStock ? mockStockResults : mockMutualFundResults;
   
@@ -48,10 +55,35 @@ export default function AddStockOrMutualFund() {
     setSearchQuery("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Adding investment:", { selectedItem, investedAmount, notes });
-    navigate("/wealth/" + type);
+    if (!selectedItem) return;
+    
+    setIsSubmitting(true);
+    try {
+      const invested = parseFloat(investedAmount) || 0;
+      const current = parseFloat(currentValue) || invested;
+      
+      await createInvestment.mutateAsync({
+        name: selectedItem.name,
+        type: isStock ? "stocks" : "mutual-funds",
+        invested_value: invested,
+        current_value: current,
+        category: isStock 
+          ? "Large Cap" 
+          : (selectedItem as typeof mockMutualFundResults[0]).category,
+        risk_level: isStock ? "Equity" : "Medium Risk",
+        notes: notes || null,
+      });
+      
+      toast.success(`${isStock ? "Stock" : "Mutual Fund"} added successfully`);
+      navigate("/wealth/" + type);
+    } catch (error) {
+      console.error("Failed to add investment:", error);
+      toast.error("Failed to add investment");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -157,6 +189,18 @@ export default function AddStockOrMutualFund() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="current" className="text-muted-foreground">Current Value (optional)</Label>
+                <Input
+                  id="current"
+                  type="number"
+                  value={currentValue}
+                  onChange={(e) => setCurrentValue(e.target.value)}
+                  placeholder="₹0 (defaults to invested amount)"
+                  className="bg-muted border-border"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="notes" className="text-muted-foreground">Notes (Optional)</Label>
                 <Textarea
                   id="notes"
@@ -176,11 +220,12 @@ export default function AddStockOrMutualFund() {
                 variant="outline"
                 onClick={handleCancel}
                 className="flex-1 border-border"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="flex-1">
-                Add {isStock ? "Stock" : "Mutual Fund"}
+              <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? "Adding..." : `Add ${isStock ? "Stock" : "Mutual Fund"}`}
               </Button>
             </div>
           </form>

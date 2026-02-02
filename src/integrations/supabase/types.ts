@@ -44,6 +44,66 @@ export type Database = {
         }
         Relationships: []
       }
+      investments: {
+        Row: {
+          account_number: string | null
+          added_date: string | null
+          bank: string | null
+          category: string | null
+          created_at: string
+          current_value: number
+          id: string
+          interest_rate: number | null
+          invested_value: number
+          maturity_date: string | null
+          maturity_value: number | null
+          name: string
+          notes: string | null
+          risk_level: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number?: string | null
+          added_date?: string | null
+          bank?: string | null
+          category?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          interest_rate?: number | null
+          invested_value?: number
+          maturity_date?: string | null
+          maturity_value?: number | null
+          name: string
+          notes?: string | null
+          risk_level?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string | null
+          added_date?: string | null
+          bank?: string | null
+          category?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          interest_rate?: number | null
+          invested_value?: number
+          maturity_date?: string | null
+          maturity_value?: number | null
+          name?: string
+          notes?: string | null
+          risk_level?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
