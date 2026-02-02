@@ -1,24 +1,35 @@
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, Eye, Building2, Shield, Coins } from "lucide-react";
-import { ListCard, ListCardWithIcon } from "@/components/ui/list-card";
-import { getInvestmentsByType, getTotalByType, formatCurrency } from "@/data/mockData";
+import { ListCardWithIcon } from "@/components/ui/list-card";
+import { useInvestments } from "@/hooks/useInvestments";
+import { formatCurrency } from "@/data/mockData";
 
 export default function SavingsPage() {
   const navigate = useNavigate();
+  const { getInvestmentsByType, getTotalByType, isLoading } = useInvestments();
+  
   const savings = getInvestmentsByType("savings");
   const totals = getTotalByType("savings");
 
   const getIcon = (name: string) => {
-    if (name.includes("Primary") || name.includes("HDFC")) return Building2;
+    if (name.includes("Primary") || name.includes("HDFC") || name.includes("Bank")) return Building2;
     if (name.includes("Emergency")) return Shield;
     return Coins;
   };
 
   const getIconBg = (name: string) => {
-    if (name.includes("Primary") || name.includes("HDFC")) return "bg-primary/20";
+    if (name.includes("Primary") || name.includes("HDFC") || name.includes("Bank")) return "bg-primary/20";
     if (name.includes("Emergency")) return "bg-fintrack-green/20";
     return "bg-fintrack-gold/20";
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <span className="text-muted-foreground">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in">
@@ -43,24 +54,31 @@ export default function SavingsPage() {
           </button>
         </div>
         
-        <div className="space-y-3">
-          {savings.map((account) => {
-            const Icon = getIcon(account.name);
-            const iconBg = getIconBg(account.name);
-            
-            return (
-              <ListCardWithIcon
-                key={account.id}
-                icon={<Icon className="h-5 w-5 text-primary" />}
-                iconBg={iconBg}
-                title={account.name}
-                subtitle={account.accountNumber ? `**** ${account.accountNumber}` : account.category}
-                value={formatCurrency(account.currentValue)}
-                onClick={() => navigate(`/wealth/savings/${account.id}`)}
-              />
-            );
-          })}
-        </div>
+        {savings.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No savings accounts added yet</p>
+            <p className="text-sm mt-1">Tap the + button to add your first account</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {savings.map((account) => {
+              const Icon = getIcon(account.name);
+              const iconBg = getIconBg(account.name);
+              
+              return (
+                <ListCardWithIcon
+                  key={account.id}
+                  icon={<Icon className="h-5 w-5 text-primary" />}
+                  iconBg={iconBg}
+                  title={account.name}
+                  subtitle={account.account_number ? `**** ${account.account_number}` : account.category || "Savings"}
+                  value={formatCurrency(account.current_value)}
+                  onClick={() => navigate(`/wealth/savings/${account.id}`)}
+                />
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

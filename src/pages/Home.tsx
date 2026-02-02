@@ -7,12 +7,10 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useGoals } from "@/hooks/useGoals";
 import { useSpendings } from "@/hooks/useSpendings";
 import { useProfile } from "@/hooks/useProfile";
+import { useInvestments } from "@/hooks/useInvestments";
 import { featureFlags } from "@/lib/featureFlags";
-import { 
-  formatCurrency, 
-  getNetWorth, 
-  getTotalInvested,
-} from "@/data/mockData";
+import { formatCurrency } from "@/data/mockData";
+
 // Helper to format currency for display
 function formatDisplayCurrency(amount: number, compact: boolean = false): string {
   if (compact) {
@@ -37,9 +35,18 @@ export default function HomePage() {
   const { goals, isLoading: goalsLoading } = useGoals();
   const { spendings, monthlyTotal, isLoading: spendingsLoading } = useSpendings();
   const { getDisplayName } = useProfile();
+  const { 
+    investments, 
+    getNetWorth, 
+    getTotalInvested, 
+    getTotalReturns,
+    isLoading: investmentsLoading 
+  } = useInvestments();
   
   const netWorth = getNetWorth();
   const totalInvested = getTotalInvested();
+  const totalReturns = getTotalReturns();
+  const hasWealthData = investments.length > 0;
   
   // Get top 2 active goals (those not yet completed)
   const activeGoals = goals
@@ -57,8 +64,20 @@ export default function HomePage() {
     ? Math.min(100, Math.round((monthlyExpense / monthlyIncome) * 100)) 
     : 0;
 
+  // Calculate composition percentages
+  const savingsTotal = investments
+    .filter(inv => inv.type === "savings")
+    .reduce((sum, inv) => sum + Number(inv.current_value), 0);
+  const investmentTotal = investments
+    .filter(inv => ["stocks", "mutual-funds", "gold"].includes(inv.type))
+    .reduce((sum, inv) => sum + Number(inv.current_value), 0);
+  const fdTotal = investments
+    .filter(inv => inv.type === "fd")
+    .reduce((sum, inv) => sum + Number(inv.current_value), 0);
+
   const displayName = getDisplayName();
   const greeting = getGreeting();
+  
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -84,13 +103,30 @@ export default function HomePage() {
           <div className="flex items-start justify-between">
             <div>
               <SummaryLabel>Total Net Worth</SummaryLabel>
-              <SummaryValue size="2xl" className="mt-1">
-                {formatCurrency(netWorth)}
-              </SummaryValue>
-              <div className="mt-2 flex items-center gap-1.5 text-sm text-fintrack-green">
-                <TrendingUp className="h-4 w-4" />
-                <span>+2.4% In last 30 days</span>
-              </div>
+              {investmentsLoading ? (
+                <SummaryValue size="2xl" className="mt-1">Loading...</SummaryValue>
+              ) : (
+                <>
+                  <SummaryValue size="2xl" className="mt-1">
+                    {hasWealthData ? formatCurrency(netWorth) : "₹0"}
+                  </SummaryValue>
+                  {hasWealthData && totalReturns !== 0 && (
+                    <div className={`mt-2 flex items-center gap-1.5 text-sm ${
+                      totalReturns >= 0 ? "text-fintrack-green" : "text-fintrack-red-soft"
+                    }`}>
+                      <TrendingUp className="h-4 w-4" />
+                      <span>
+                        {totalReturns >= 0 ? "+" : ""}{formatDisplayCurrency(totalReturns, true)} returns
+                      </span>
+                    </div>
+                  )}
+                  {!hasWealthData && (
+                    <p className="mt-2 text-sm text-primary-foreground/70">
+                      Add investments to track your net worth
+                    </p>
+                  )}
+                </>
+              )}
             </div>
             <button className="rounded-full bg-primary-foreground/10 p-2">
               <div className="h-5 w-5 text-primary-foreground/70" />
@@ -103,44 +139,66 @@ export default function HomePage() {
           {/* Composition */}
           <ListCard className="p-4">
             <p className="mb-3 text-sm font-medium text-muted-foreground">Composition</p>
-            <div className="relative mx-auto h-24 w-24">
-              {/* Simple donut visualization */}
-              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" />
-                <circle 
-                  cx="50" cy="50" r="40" fill="none" 
-                  stroke="hsl(var(--primary))" strokeWidth="12" 
-                  strokeDasharray="150 251" strokeLinecap="round"
-                />
-                <circle 
-                  cx="50" cy="50" r="40" fill="none" 
-                  stroke="hsl(var(--fintrack-cyan))" strokeWidth="12" 
-                  strokeDasharray="60 251" strokeDashoffset="-150" strokeLinecap="round"
-                />
-                <circle 
-                  cx="50" cy="50" r="40" fill="none" 
-                  stroke="hsl(var(--fintrack-purple))" strokeWidth="12" 
-                  strokeDasharray="40 251" strokeDashoffset="-210" strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-medium text-muted-foreground">Total</span>
+            {investmentsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <span className="text-sm text-muted-foreground">Loading...</span>
               </div>
-            </div>
-            <div className="mt-3 space-y-1.5">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-muted-foreground">Investments</span>
+            ) : !hasWealthData ? (
+              <div className="flex flex-col items-center justify-center h-32 text-center">
+                <span className="text-sm text-muted-foreground">No data yet</span>
+                <Link to="/wealth" className="text-xs text-primary mt-1">Add investments</Link>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="h-2 w-2 rounded-full bg-fintrack-cyan" />
-                <span className="text-muted-foreground">Assets</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="h-2 w-2 rounded-full bg-fintrack-purple" />
-                <span className="text-muted-foreground">Cash</span>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="relative mx-auto h-24 w-24">
+                  {/* Simple donut visualization */}
+                  <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" />
+                    {netWorth > 0 && (
+                      <>
+                        <circle 
+                          cx="50" cy="50" r="40" fill="none" 
+                          stroke="hsl(var(--primary))" strokeWidth="12" 
+                          strokeDasharray={`${(investmentTotal / netWorth) * 251} 251`} 
+                          strokeLinecap="round"
+                        />
+                        <circle 
+                          cx="50" cy="50" r="40" fill="none" 
+                          stroke="hsl(var(--fintrack-cyan))" strokeWidth="12" 
+                          strokeDasharray={`${(fdTotal / netWorth) * 251} 251`} 
+                          strokeDashoffset={`-${(investmentTotal / netWorth) * 251}`}
+                          strokeLinecap="round"
+                        />
+                        <circle 
+                          cx="50" cy="50" r="40" fill="none" 
+                          stroke="hsl(var(--fintrack-purple))" strokeWidth="12" 
+                          strokeDasharray={`${(savingsTotal / netWorth) * 251} 251`} 
+                          strokeDashoffset={`-${((investmentTotal + fdTotal) / netWorth) * 251}`}
+                          strokeLinecap="round"
+                        />
+                      </>
+                    )}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-muted-foreground">Total</span>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    <span className="text-muted-foreground">Investments</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="h-2 w-2 rounded-full bg-fintrack-cyan" />
+                    <span className="text-muted-foreground">Fixed Deposits</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="h-2 w-2 rounded-full bg-fintrack-purple" />
+                    <span className="text-muted-foreground">Savings</span>
+                  </div>
+                </div>
+              </>
+            )}
           </ListCard>
 
           {/* Month Flow - Connected to real spending data */}
@@ -196,23 +254,42 @@ export default function HomePage() {
               View More
             </Link>
           </div>
-          <ListCard>
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-fintrack-card-elevated">
-                <TrendingUp className="h-6 w-6 text-primary" />
+          {investmentsLoading ? (
+            <ListCard>
+              <div className="flex items-center justify-center py-4">
+                <span className="text-sm text-muted-foreground">Loading...</span>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Current Value</p>
-                <p className="text-xl font-bold text-foreground">
-                  {formatCurrency(totalInvested)}
-                </p>
+            </ListCard>
+          ) : !hasWealthData ? (
+            <ListCard>
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">No investments yet</p>
+                <Link to="/wealth" className="text-sm font-medium text-primary mt-1 inline-block">
+                  Add your first investment
+                </Link>
               </div>
-              <div className="text-right">
-                <p className="font-semibold text-fintrack-green">+ ₹890.00</p>
-                <p className="text-sm text-muted-foreground">Today's Profit</p>
+            </ListCard>
+          ) : (
+            <ListCard>
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-fintrack-card-elevated">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Current Value</p>
+                  <p className="text-xl font-bold text-foreground">
+                    {formatCurrency(totalInvested)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`font-semibold ${totalReturns >= 0 ? "text-fintrack-green" : "text-fintrack-red-soft"}`}>
+                    {totalReturns >= 0 ? "+" : ""} {formatDisplayCurrency(totalReturns, true)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Returns</p>
+                </div>
               </div>
-            </div>
-          </ListCard>
+            </ListCard>
+          )}
         </section>
 
         {/* Goals - Connected to real data */}

@@ -27,6 +27,12 @@ function NotificationItem({
         return "bg-fintrack-red-soft/20 text-fintrack-red-soft";
       case "upcoming_expense":
         return "bg-primary/20 text-primary";
+      case "wealth_added":
+      case "wealth_updated":
+      case "networth_change":
+        return "bg-fintrack-green/20 text-fintrack-green";
+      case "wealth_deleted":
+        return "bg-muted text-muted-foreground";
       default:
         return "bg-muted text-muted-foreground";
     }

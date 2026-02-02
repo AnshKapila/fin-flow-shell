@@ -1,13 +1,24 @@
 import { useNavigate } from "react-router-dom";
-import { SummaryCard, SummaryLabel, SummaryValue, SummaryRow } from "@/components/ui/summary-card";
+import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { HoldingCard } from "@/components/ui/list-card";
-import { getInvestmentsByType, getTotalByType, formatCurrency, formatPercent } from "@/data/mockData";
+import { useInvestments } from "@/hooks/useInvestments";
+import { formatCurrency, formatPercent } from "@/data/mockData";
 
 export default function StocksPage() {
   const navigate = useNavigate();
+  const { getInvestmentsByType, getTotalByType, getReturnsPercent, isLoading } = useInvestments();
+  
   const stocks = getInvestmentsByType("stocks");
   const totals = getTotalByType("stocks");
-  const returnsPercent = totals.invested > 0 ? ((totals.returns / totals.invested) * 100) : 0;
+  const returnsPercent = getReturnsPercent(totals.invested, totals.returns);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <span className="text-muted-foreground">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in">
@@ -29,9 +40,13 @@ export default function StocksPage() {
               <span className="text-lg font-semibold text-primary-foreground">
                 {formatCurrency(totals.returns)}
               </span>
-              <span className="rounded-full bg-fintrack-green px-2 py-0.5 text-xs font-bold text-primary-foreground">
-                ↑ {formatPercent(returnsPercent)}
-              </span>
+              {totals.invested > 0 && (
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold text-primary-foreground ${
+                  returnsPercent >= 0 ? "bg-fintrack-green" : "bg-fintrack-red-soft"
+                }`}>
+                  {returnsPercent >= 0 ? "↑" : "↓"} {formatPercent(returnsPercent)}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -40,20 +55,32 @@ export default function StocksPage() {
       {/* Holdings List */}
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-4">Your Holdings</h2>
-        <div className="divide-y divide-border">
-          {stocks.map((stock) => (
-            <HoldingCard
-              key={stock.id}
-              name={stock.name}
-              subtitle={`${stock.category} • ${stock.riskLevel || "Equity"}`}
-              value={formatCurrency(stock.currentValue)}
-              invested={formatCurrency(stock.investedValue)}
-              returns={formatPercent(stock.returnsPercent)}
-              isPositive={stock.returnsPercent >= 0}
-              onClick={() => navigate(`/wealth/stocks/${stock.id}`)}
-            />
-          ))}
-        </div>
+        {stocks.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No stocks added yet</p>
+            <p className="text-sm mt-1">Tap the + button to add your first stock</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {stocks.map((stock) => {
+              const stockReturnsPercent = stock.invested_value > 0 
+                ? ((stock.current_value - stock.invested_value) / stock.invested_value) * 100 
+                : 0;
+              return (
+                <HoldingCard
+                  key={stock.id}
+                  name={stock.name}
+                  subtitle={`${stock.category || "Equity"} • ${stock.risk_level || "Stock"}`}
+                  value={formatCurrency(stock.current_value)}
+                  invested={formatCurrency(stock.invested_value)}
+                  returns={formatPercent(stockReturnsPercent)}
+                  isPositive={stockReturnsPercent >= 0}
+                  onClick={() => navigate(`/wealth/stocks/${stock.id}`)}
+                />
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
