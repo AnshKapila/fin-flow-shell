@@ -55,11 +55,15 @@ export type Database = {
           id: string
           interest_rate: number | null
           invested_value: number
+          is_closed: boolean | null
           maturity_date: string | null
           maturity_value: number | null
           name: string
           notes: string | null
           risk_level: string | null
+          start_date: string | null
+          tenure_unit: string | null
+          tenure_value: number | null
           type: string
           updated_at: string
           user_id: string
@@ -74,11 +78,15 @@ export type Database = {
           id?: string
           interest_rate?: number | null
           invested_value?: number
+          is_closed?: boolean | null
           maturity_date?: string | null
           maturity_value?: number | null
           name: string
           notes?: string | null
           risk_level?: string | null
+          start_date?: string | null
+          tenure_unit?: string | null
+          tenure_value?: number | null
           type: string
           updated_at?: string
           user_id: string
@@ -93,11 +101,15 @@ export type Database = {
           id?: string
           interest_rate?: number | null
           invested_value?: number
+          is_closed?: boolean | null
           maturity_date?: string | null
           maturity_value?: number | null
           name?: string
           notes?: string | null
           risk_level?: string | null
+          start_date?: string | null
+          tenure_unit?: string | null
+          tenure_value?: number | null
           type?: string
           updated_at?: string
           user_id?: string

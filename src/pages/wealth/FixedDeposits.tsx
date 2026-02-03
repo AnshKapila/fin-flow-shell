@@ -3,18 +3,55 @@ import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary
 import { ListCard } from "@/components/ui/list-card";
 import { useInvestments } from "@/hooks/useInvestments";
 import { formatCurrency } from "@/data/mockData";
+import { calculateFDDetails, formatTenure, parseDate } from "@/lib/fdCalculations";
 import { MoreHorizontal } from "lucide-react";
+import { format } from "date-fns";
 
 export default function FixedDepositsPage() {
   const navigate = useNavigate();
-  const { getInvestmentsByType, getTotalByType, isLoading } = useInvestments();
+  const { getInvestmentsByType, isLoading } = useInvestments();
   
   const fds = getInvestmentsByType("fd");
-  const totals = getTotalByType("fd");
   
-  // Calculate total maturity and interest
-  const totalMaturity = fds.reduce((sum, fd) => sum + (Number(fd.maturity_value) || Number(fd.current_value)), 0);
-  const totalInterest = totalMaturity - totals.invested;
+  // Calculate values for each FD with time-based logic
+  const fdsWithCalculations = fds.map(fd => {
+    const startDate = parseDate(fd.start_date);
+    const hasStructuredData = startDate && fd.tenure_value && fd.tenure_unit;
+    
+    if (hasStructuredData) {
+      const calculated = calculateFDDetails({
+        principal: Number(fd.invested_value),
+        interestRate: Number(fd.interest_rate) || 0,
+        startDate: startDate!,
+        tenureValue: fd.tenure_value!,
+        tenureUnit: fd.tenure_unit as "months" | "years",
+      });
+      
+      return {
+        ...fd,
+        calculatedCurrentValue: calculated.currentValue,
+        calculatedMaturityValue: calculated.maturityAmount,
+        maturityDateFormatted: format(calculated.maturityDate, "dd MMM yyyy"),
+        isMatured: calculated.isMatured,
+        tenureFormatted: formatTenure(fd.tenure_value!, fd.tenure_unit as "months" | "years"),
+      };
+    }
+    
+    return {
+      ...fd,
+      calculatedCurrentValue: Number(fd.current_value),
+      calculatedMaturityValue: Number(fd.maturity_value) || Number(fd.current_value),
+      maturityDateFormatted: fd.maturity_date || null,
+      isMatured: false,
+      tenureFormatted: fd.maturity_date,
+    };
+  });
+  
+  // Calculate totals
+  const totalInvested = fdsWithCalculations.reduce((sum, fd) => sum + Number(fd.invested_value), 0);
+  const totalCurrent = fdsWithCalculations.reduce((sum, fd) => sum + fd.calculatedCurrentValue, 0);
+  const totalMaturity = fdsWithCalculations.reduce((sum, fd) => sum + fd.calculatedMaturityValue, 0);
+  const totalInterest = totalMaturity - totalInvested;
 
   if (isLoading) {
     return (
@@ -31,20 +68,20 @@ export default function FixedDepositsPage() {
         <p className="text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
           FD SUMMARY
         </p>
-        <p className="text-sm text-primary-foreground/80 mt-1">Total Invested</p>
-        <SummaryValue className="mt-1">{formatCurrency(totals.invested)}</SummaryValue>
+        <p className="text-sm text-primary-foreground/80 mt-1">Current Value</p>
+        <SummaryValue className="mt-1">{formatCurrency(totalCurrent)}</SummaryValue>
         
         <div className="mt-4 grid grid-cols-2 gap-4 pt-4 border-t border-primary-foreground/20">
           <div>
-            <p className="text-sm text-primary-foreground/70">Maturity Value</p>
+            <p className="text-sm text-primary-foreground/70">Total Invested</p>
             <p className="text-lg font-semibold text-primary-foreground">
-              {formatCurrency(totalMaturity)}
+              {formatCurrency(totalInvested)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-primary-foreground/70">Interest Earned</p>
+            <p className="text-sm text-primary-foreground/70">Expected Interest</p>
             <p className="text-lg font-semibold text-primary-foreground">
-              {formatCurrency(totalInterest)}
+              +{formatCurrency(totalInterest)}
             </p>
           </div>
         </div>
@@ -66,7 +103,7 @@ export default function FixedDepositsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {fds.map((fd) => (
+            {fdsWithCalculations.map((fd) => (
               <ListCard 
                 key={fd.id} 
                 onClick={() => navigate(`/wealth/fd/${fd.id}`)}
@@ -76,14 +113,18 @@ export default function FixedDepositsPage() {
                   <div>
                     <p className="font-semibold text-foreground">{fd.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatCurrency(fd.invested_value)} → {formatCurrency(Number(fd.maturity_value) || fd.current_value)}
+                      {formatCurrency(fd.invested_value)} → {formatCurrency(fd.calculatedMaturityValue)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {fd.maturity_date && (
-                    <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                      Matures in {fd.maturity_date}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {fd.maturityDateFormatted && (
+                    <span className={`rounded-full px-3 py-1 text-xs ${
+                      fd.isMatured 
+                        ? "bg-fintrack-green/20 text-fintrack-green" 
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {fd.isMatured ? "Matured" : `Matures: ${fd.maturityDateFormatted}`}
                     </span>
                   )}
                   {fd.interest_rate && (
