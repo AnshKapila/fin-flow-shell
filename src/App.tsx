@@ -23,6 +23,9 @@ import Savings from "./pages/wealth/Savings";
 import InvestmentDetail from "./pages/wealth/InvestmentDetail";
 import AddStockOrMutualFund from "./pages/wealth/AddStockOrMutualFund";
 import AddSimpleInvestment from "./pages/wealth/AddSimpleInvestment";
+import AddFixedDeposit from "./pages/wealth/AddFixedDeposit";
+import FDDetail from "./pages/wealth/FDDetail";
+import EditFixedDeposit from "./pages/wealth/EditFixedDeposit";
 import Goals from "./pages/Goals";
 import GoalDetail from "./pages/GoalDetail";
 import EditGoal from "./pages/goals/EditGoal";
@@ -57,8 +60,12 @@ const App = () => (
                 <Route path="/wealth/add/stocks" element={<AddStockOrMutualFund />} />
                 <Route path="/wealth/add/mutual-funds" element={<AddStockOrMutualFund />} />
                 <Route path="/wealth/add/gold" element={<AddSimpleInvestment />} />
-                <Route path="/wealth/add/fd" element={<AddSimpleInvestment />} />
+                <Route path="/wealth/add/fd" element={<AddFixedDeposit />} />
                 <Route path="/wealth/add/savings" element={<AddSimpleInvestment />} />
+                {/* FD-specific routes */}
+                <Route path="/wealth/fd/:id" element={<FDDetail />} />
+                <Route path="/wealth/fd/:id/edit" element={<EditFixedDeposit />} />
+                {/* Generic investment detail for other types */}
                 <Route path="/wealth/:type/:id" element={<InvestmentDetail />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/goals/:id" element={<GoalDetail />} />

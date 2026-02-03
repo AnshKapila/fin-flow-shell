@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 
 export type InvestmentType = "stocks" | "mutual-funds" | "gold" | "fd" | "savings";
+export type TenureUnit = "months" | "years";
 
 export interface Investment {
   id: string;
@@ -21,6 +22,11 @@ export interface Investment {
   maturity_value: number | null;
   added_date: string | null;
   notes: string | null;
+  // FD-specific fields
+  start_date: string | null;
+  tenure_value: number | null;
+  tenure_unit: TenureUnit | null;
+  is_closed: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +45,11 @@ export interface CreateInvestmentInput {
   maturity_value?: number | null;
   added_date?: string | null;
   notes?: string | null;
+  // FD-specific fields
+  start_date?: string | null;
+  tenure_value?: number | null;
+  tenure_unit?: TenureUnit | null;
+  is_closed?: boolean | null;
 }
 
 export interface UpdateInvestmentInput extends Partial<CreateInvestmentInput> {
@@ -93,6 +104,11 @@ export function useInvestments() {
             day: "numeric", month: "short", year: "numeric" 
           }),
           notes: input.notes || null,
+          // FD-specific fields
+          start_date: input.start_date || null,
+          tenure_value: input.tenure_value || null,
+          tenure_unit: input.tenure_unit || null,
+          is_closed: input.is_closed ?? false,
         })
         .select()
         .single();
