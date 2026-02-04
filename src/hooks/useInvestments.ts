@@ -202,8 +202,15 @@ export function useInvestments() {
     };
   };
 
-  const getNetWorth = (): number => {
-    return investments.reduce((sum, inv) => sum + Number(inv.current_value), 0);
+  // Calculate net worth with optional gold price for live gold calculations
+  const getNetWorth = (goldPricePerGram?: number): number => {
+    return investments.reduce((sum, inv) => {
+      if (inv.type === "gold" && goldPricePerGram) {
+        const weightInGrams = parseFloat(inv.risk_level?.replace("g", "") || "0");
+        return sum + (weightInGrams * goldPricePerGram);
+      }
+      return sum + Number(inv.current_value);
+    }, 0);
   };
 
   const getTotalInvested = (): number => {
@@ -213,16 +220,42 @@ export function useInvestments() {
       .reduce((sum, inv) => sum + Number(inv.current_value), 0);
   };
 
-  const getTotalReturns = (): number => {
-    return investments.reduce(
-      (sum, inv) => sum + (Number(inv.current_value) - Number(inv.invested_value)),
-      0
-    );
+  const getTotalReturns = (goldPricePerGram?: number): number => {
+    return investments.reduce((sum, inv) => {
+      if (inv.type === "gold" && goldPricePerGram) {
+        const weightInGrams = parseFloat(inv.risk_level?.replace("g", "") || "0");
+        const currentValue = weightInGrams * goldPricePerGram;
+        return sum + (currentValue - Number(inv.invested_value));
+      }
+      return sum + (Number(inv.current_value) - Number(inv.invested_value));
+    }, 0);
   };
 
   const getReturnsPercent = (invested: number, returns: number): number => {
     if (invested <= 0) return 0;
     return (returns / invested) * 100;
+  };
+
+  // Get totals with live gold price
+  const getTotalsWithLiveGold = (goldPricePerGram: number) => {
+    let totalCurrent = 0;
+    let totalInvested = 0;
+    
+    investments.forEach(inv => {
+      if (inv.type === "gold") {
+        const weightInGrams = parseFloat(inv.risk_level?.replace("g", "") || "0");
+        totalCurrent += weightInGrams * goldPricePerGram;
+      } else {
+        totalCurrent += Number(inv.current_value);
+      }
+      totalInvested += Number(inv.invested_value);
+    });
+    
+    return {
+      current: totalCurrent,
+      invested: totalInvested,
+      returns: totalCurrent - totalInvested,
+    };
   };
 
   return {
@@ -238,5 +271,6 @@ export function useInvestments() {
     getTotalInvested,
     getTotalReturns,
     getReturnsPercent,
+    getTotalsWithLiveGold,
   };
 }

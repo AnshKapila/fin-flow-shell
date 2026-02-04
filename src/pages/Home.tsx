@@ -8,6 +8,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useSpendings } from "@/hooks/useSpendings";
 import { useProfile } from "@/hooks/useProfile";
 import { useInvestments } from "@/hooks/useInvestments";
+import { useGoldPrice } from "@/hooks/useGoldPrice";
 import { featureFlags } from "@/lib/featureFlags";
 import { formatCurrency } from "@/data/mockData";
 
@@ -38,15 +39,29 @@ export default function HomePage() {
   const { 
     investments, 
     getNetWorth, 
-    getTotalInvested, 
     getTotalReturns,
+    getTotalsWithLiveGold,
     isLoading: investmentsLoading 
   } = useInvestments();
+  const { goldPrice, isLoading: goldPriceLoading } = useGoldPrice();
   
-  const netWorth = getNetWorth();
-  const totalInvested = getTotalInvested();
-  const totalReturns = getTotalReturns();
+  // Calculate with live gold price
+  const liveGoldPrice = goldPrice.price_per_gram_24k;
+  const totals = getTotalsWithLiveGold(liveGoldPrice);
+  const netWorth = totals.current;
+  const totalReturns = totals.returns;
   const hasWealthData = investments.length > 0;
+  
+  // Calculate investment totals (stocks, MF, gold)
+  const investmentTotal = investments
+    .filter(inv => ["stocks", "mutual-funds", "gold"].includes(inv.type))
+    .reduce((sum, inv) => {
+      if (inv.type === "gold") {
+        const weightInGrams = parseFloat(inv.risk_level?.replace("g", "") || "0");
+        return sum + (weightInGrams * liveGoldPrice);
+      }
+      return sum + Number(inv.current_value);
+    }, 0);
   
   // Get top 2 active goals (those not yet completed)
   const activeGoals = goals
@@ -67,9 +82,6 @@ export default function HomePage() {
   // Calculate composition percentages
   const savingsTotal = investments
     .filter(inv => inv.type === "savings")
-    .reduce((sum, inv) => sum + Number(inv.current_value), 0);
-  const investmentTotal = investments
-    .filter(inv => ["stocks", "mutual-funds", "gold"].includes(inv.type))
     .reduce((sum, inv) => sum + Number(inv.current_value), 0);
   const fdTotal = investments
     .filter(inv => inv.type === "fd")
@@ -278,7 +290,7 @@ export default function HomePage() {
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Current Value</p>
                   <p className="text-xl font-bold text-foreground">
-                    {formatCurrency(totalInvested)}
+                    {formatCurrency(investmentTotal)}
                   </p>
                 </div>
                 <div className="text-right">

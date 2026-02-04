@@ -10,6 +10,7 @@ interface PageHeaderProps {
   showSearch?: boolean;
   onMoreClick?: () => void;
   onSearchClick?: () => void;
+  rightContent?: React.ReactNode;
 }
 
 export function PageHeader({
@@ -21,6 +22,7 @@ export function PageHeader({
   showSearch = false,
   onMoreClick,
   onSearchClick,
+  rightContent,
 }: PageHeaderProps) {
   const navigate = useNavigate();
 
@@ -67,6 +69,7 @@ export function PageHeader({
               <MoreHorizontal className="h-5 w-5" />
             </button>
           )}
+          {rightContent}
         </div>
       </div>
     </header>

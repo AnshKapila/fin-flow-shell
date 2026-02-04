@@ -52,6 +52,7 @@ export type Database = {
           category: string | null
           created_at: string
           current_value: number
+          gold_type: string | null
           id: string
           interest_rate: number | null
           invested_value: number
@@ -60,6 +61,7 @@ export type Database = {
           maturity_value: number | null
           name: string
           notes: string | null
+          purchase_price_per_unit: number | null
           risk_level: string | null
           start_date: string | null
           tenure_unit: string | null
@@ -67,6 +69,7 @@ export type Database = {
           type: string
           updated_at: string
           user_id: string
+          weight_in_grams: number | null
         }
         Insert: {
           account_number?: string | null
@@ -75,6 +78,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           current_value?: number
+          gold_type?: string | null
           id?: string
           interest_rate?: number | null
           invested_value?: number
@@ -83,6 +87,7 @@ export type Database = {
           maturity_value?: number | null
           name: string
           notes?: string | null
+          purchase_price_per_unit?: number | null
           risk_level?: string | null
           start_date?: string | null
           tenure_unit?: string | null
@@ -90,6 +95,7 @@ export type Database = {
           type: string
           updated_at?: string
           user_id: string
+          weight_in_grams?: number | null
         }
         Update: {
           account_number?: string | null
@@ -98,6 +104,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           current_value?: number
+          gold_type?: string | null
           id?: string
           interest_rate?: number | null
           invested_value?: number
@@ -106,6 +113,7 @@ export type Database = {
           maturity_value?: number | null
           name?: string
           notes?: string | null
+          purchase_price_per_unit?: number | null
           risk_level?: string | null
           start_date?: string | null
           tenure_unit?: string | null
@@ -113,6 +121,7 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
+          weight_in_grams?: number | null
         }
         Relationships: []
       }
