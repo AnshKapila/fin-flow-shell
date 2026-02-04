@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, CalendarIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useInvestments } from "@/hooks/useInvestments";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Mock search results for stocks
 const mockStockResults = [
@@ -39,6 +43,7 @@ export default function AddStockOrMutualFund() {
   const [selectedItem, setSelectedItem] = useState<typeof mockStockResults[0] | typeof mockMutualFundResults[0] | null>(null);
   const [investedAmount, setInvestedAmount] = useState("");
   const [currentValue, setCurrentValue] = useState("");
+  const [investmentDate, setInvestmentDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,6 +64,11 @@ export default function AddStockOrMutualFund() {
     e.preventDefault();
     if (!selectedItem) return;
     
+    if (!investmentDate) {
+      toast.error("Please select an investment date");
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const invested = parseFloat(investedAmount) || 0;
@@ -69,6 +79,7 @@ export default function AddStockOrMutualFund() {
         type: isStock ? "stocks" : "mutual-funds",
         invested_value: invested,
         current_value: current,
+        start_date: format(investmentDate, "yyyy-MM-dd"),
         category: isStock 
           ? "Large Cap" 
           : (selectedItem as typeof mockMutualFundResults[0]).category,
@@ -175,8 +186,41 @@ export default function AddStockOrMutualFund() {
 
             {/* Investment Details */}
             <div className="space-y-4">
+              {/* Investment Date - Required */}
               <div className="space-y-2">
-                <Label htmlFor="invested" className="text-muted-foreground">Invested Amount</Label>
+                <Label className="text-muted-foreground">
+                  Investment Date <span className="text-destructive">*</span>
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-muted border-border",
+                        !investmentDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {investmentDate ? format(investmentDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={investmentDate}
+                      onSelect={setInvestmentDate}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invested" className="text-muted-foreground">
+                  Invested Amount <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="invested"
                   type="number"

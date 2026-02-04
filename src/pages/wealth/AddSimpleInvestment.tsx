@@ -1,41 +1,23 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CalendarIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useInvestments, InvestmentType } from "@/hooks/useInvestments";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const assetConfig: Record<string, { 
   title: string; 
   type: InvestmentType;
   fields: { id: string; label: string; placeholder: string; required?: boolean; type?: string }[] 
 }> = {
-  gold: {
-    title: "Add Gold",
-    type: "gold",
-    fields: [
-      { id: "name", label: "Name / Label", placeholder: "e.g., Digital Gold - Groww", required: true },
-      { id: "invested_value", label: "Invested Amount", placeholder: "₹0", required: true, type: "number" },
-      { id: "current_value", label: "Current Value", placeholder: "₹0 (optional)", type: "number" },
-      { id: "interest_rate", label: "Interest Rate (%) - for SGB", placeholder: "2.5", type: "number" },
-      { id: "maturity_date", label: "Maturity Date - for SGB", placeholder: "e.g., Dec 2029" },
-    ],
-  },
-  fd: {
-    title: "Add Fixed Deposit",
-    type: "fd",
-    fields: [
-      { id: "name", label: "Name / Label", placeholder: "e.g., HDFC 1-Year FD", required: true },
-      { id: "bank", label: "Bank Name", placeholder: "e.g., HDFC Bank" },
-      { id: "invested_value", label: "Principal Amount", placeholder: "₹0", required: true, type: "number" },
-      { id: "interest_rate", label: "Interest Rate (%)", placeholder: "7.0", type: "number" },
-      { id: "maturity_value", label: "Maturity Value", placeholder: "₹0", type: "number" },
-      { id: "maturity_date", label: "Maturity Period", placeholder: "e.g., 12 months" },
-    ],
-  },
   savings: {
     title: "Add Savings Account",
     type: "savings",
@@ -55,11 +37,12 @@ export default function AddSimpleInvestment() {
   // Extract type from URL path
   const pathSegments = location.pathname.split('/');
   const typeFromPath = pathSegments[pathSegments.length - 1];
-  const config = assetConfig[typeFromPath] || assetConfig.gold;
+  const config = assetConfig[typeFromPath] || assetConfig.savings;
   
   const { createInvestment } = useInvestments();
   
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [investmentDate, setInvestmentDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,6 +52,11 @@ export default function AddSimpleInvestment() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!investmentDate) {
+      toast.error("Please select an investment date");
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -80,6 +68,7 @@ export default function AddSimpleInvestment() {
         type: config.type,
         invested_value: investedValue,
         current_value: currentValue,
+        start_date: format(investmentDate, "yyyy-MM-dd"),
         bank: formData.bank || null,
         account_number: formData.account_number || null,
         interest_rate: formData.interest_rate ? parseFloat(formData.interest_rate) : null,
@@ -111,6 +100,37 @@ export default function AddSimpleInvestment() {
       
       <div className="px-4 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Investment Date - Required */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground">
+              Investment Date <span className="text-destructive">*</span>
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal bg-muted border-border",
+                    !investmentDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {investmentDate ? format(investmentDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={investmentDate}
+                  onSelect={setInvestmentDate}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
           {config.fields.map((field) => (
             <div key={field.id} className="space-y-2">
               <Label htmlFor={field.id} className="text-muted-foreground">

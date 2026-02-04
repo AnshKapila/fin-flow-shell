@@ -2,17 +2,42 @@ import { useNavigate } from "react-router-dom";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { HoldingCard } from "@/components/ui/list-card";
 import { useInvestments } from "@/hooks/useInvestments";
+import { useGoldPrice } from "@/hooks/useGoldPrice";
 import { formatCurrency, formatPercent } from "@/data/mockData";
+import { RefreshCw } from "lucide-react";
+import { format } from "date-fns";
 
 export default function GoldPage() {
   const navigate = useNavigate();
-  const { getInvestmentsByType, getTotalByType, getReturnsPercent, isLoading } = useInvestments();
+  const { getInvestmentsByType, isLoading } = useInvestments();
+  const { goldPrice, isLoading: priceLoading, refetch } = useGoldPrice();
   
   const gold = getInvestmentsByType("gold");
-  const totals = getTotalByType("gold");
-  const returnsPercent = getReturnsPercent(totals.invested, totals.returns);
+  
+  // Calculate totals using live price
+  const calculateGoldValues = () => {
+    let totalInvested = 0;
+    let totalCurrentValue = 0;
+    
+    gold.forEach(item => {
+      const weightInGrams = parseFloat(item.risk_level?.replace("g", "") || "0");
+      const currentValue = weightInGrams * goldPrice.price_per_gram_24k;
+      
+      totalInvested += Number(item.invested_value);
+      totalCurrentValue += currentValue;
+    });
+    
+    return {
+      invested: totalInvested,
+      current: totalCurrentValue,
+      returns: totalCurrentValue - totalInvested,
+    };
+  };
+  
+  const totals = calculateGoldValues();
+  const returnsPercent = totals.invested > 0 ? (totals.returns / totals.invested) * 100 : 0;
 
-  if (isLoading) {
+  if (isLoading || priceLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <span className="text-muted-foreground">Loading...</span>
@@ -22,6 +47,25 @@ export default function GoldPage() {
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in">
+      {/* Live Price Banner */}
+      <div className="flex items-center justify-between p-3 rounded-lg bg-fintrack-gold/10 border border-fintrack-gold/20">
+        <div>
+          <p className="text-xs text-muted-foreground">Live Gold (24K)</p>
+          <p className="font-bold text-foreground">{formatCurrency(goldPrice.price_per_gram_24k)}/g</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(goldPrice.last_updated), "h:mm a")}
+          </span>
+          <button 
+            onClick={() => refetch()}
+            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
       {/* Summary Card */}
       <SummaryCard variant="blue">
         <SummaryLabel>Current Value</SummaryLabel>
@@ -40,9 +84,11 @@ export default function GoldPage() {
               <span className="text-lg font-semibold text-primary-foreground">
                 {formatCurrency(totals.returns)}
               </span>
-              {totals.invested > 0 && returnsPercent > 0 && (
-                <span className="rounded-full bg-fintrack-green px-2 py-0.5 text-xs font-bold text-primary-foreground">
-                  ↑ {formatPercent(returnsPercent)}
+              {totals.invested > 0 && (
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold text-primary-foreground ${
+                  returnsPercent >= 0 ? "bg-fintrack-green" : "bg-fintrack-red-soft"
+                }`}>
+                  {returnsPercent >= 0 ? "↑" : "↓"} {formatPercent(returnsPercent)}
                 </span>
               )}
             </div>
@@ -61,15 +107,25 @@ export default function GoldPage() {
         ) : (
           <div className="divide-y divide-border">
             {gold.map((item) => {
+              const weightInGrams = parseFloat(item.risk_level?.replace("g", "") || "0");
+              const currentValue = weightInGrams * goldPrice.price_per_gram_24k;
+              const gainLoss = currentValue - Number(item.invested_value);
               const itemReturnsPercent = item.invested_value > 0 
-                ? ((item.current_value - item.invested_value) / item.invested_value) * 100 
+                ? (gainLoss / Number(item.invested_value)) * 100 
                 : 0;
+              
+              const goldTypeLabel = {
+                digital: "Digital Gold",
+                physical: "Physical Gold",
+                sgb: "SGB",
+              }[item.category || "digital"] || "Gold";
+              
               return (
                 <HoldingCard
                   key={item.id}
                   name={item.name}
-                  subtitle={item.interest_rate ? `${item.interest_rate}% p.a. • Matures ${item.maturity_date}` : "Digital Gold"}
-                  value={formatCurrency(item.current_value)}
+                  subtitle={`${goldTypeLabel} • ${weightInGrams.toFixed(3)}g`}
+                  value={formatCurrency(currentValue)}
                   invested={formatCurrency(item.invested_value)}
                   returns={formatPercent(itemReturnsPercent)}
                   isPositive={itemReturnsPercent >= 0}
