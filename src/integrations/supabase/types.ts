@@ -57,16 +57,24 @@ export type Database = {
           interest_rate: number | null
           invested_value: number
           is_closed: boolean | null
+          is_sip_enabled: boolean | null
           maturity_date: string | null
           maturity_value: number | null
           name: string
+          nav_date: string | null
+          nav_value: number | null
           notes: string | null
           purchase_price_per_unit: number | null
           risk_level: string | null
+          scheme_code: string | null
+          sip_amount: number | null
+          sip_day_of_month: number | null
+          sip_start_date: string | null
           start_date: string | null
           tenure_unit: string | null
           tenure_value: number | null
           type: string
+          units_owned: number | null
           updated_at: string
           user_id: string
           weight_in_grams: number | null
@@ -83,16 +91,24 @@ export type Database = {
           interest_rate?: number | null
           invested_value?: number
           is_closed?: boolean | null
+          is_sip_enabled?: boolean | null
           maturity_date?: string | null
           maturity_value?: number | null
           name: string
+          nav_date?: string | null
+          nav_value?: number | null
           notes?: string | null
           purchase_price_per_unit?: number | null
           risk_level?: string | null
+          scheme_code?: string | null
+          sip_amount?: number | null
+          sip_day_of_month?: number | null
+          sip_start_date?: string | null
           start_date?: string | null
           tenure_unit?: string | null
           tenure_value?: number | null
           type: string
+          units_owned?: number | null
           updated_at?: string
           user_id: string
           weight_in_grams?: number | null
@@ -109,16 +125,24 @@ export type Database = {
           interest_rate?: number | null
           invested_value?: number
           is_closed?: boolean | null
+          is_sip_enabled?: boolean | null
           maturity_date?: string | null
           maturity_value?: number | null
           name?: string
+          nav_date?: string | null
+          nav_value?: number | null
           notes?: string | null
           purchase_price_per_unit?: number | null
           risk_level?: string | null
+          scheme_code?: string | null
+          sip_amount?: number | null
+          sip_day_of_month?: number | null
+          sip_start_date?: string | null
           start_date?: string | null
           tenure_unit?: string | null
           tenure_value?: number | null
           type?: string
+          units_owned?: number | null
           updated_at?: string
           user_id?: string
           weight_in_grams?: number | null
