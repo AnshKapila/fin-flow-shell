@@ -25,11 +25,14 @@ import AddStockOrMutualFund from "./pages/wealth/AddStockOrMutualFund";
 import AddSimpleInvestment from "./pages/wealth/AddSimpleInvestment";
 import AddFixedDeposit from "./pages/wealth/AddFixedDeposit";
 import AddGold from "./pages/wealth/AddGold";
+import AddStock from "./pages/wealth/AddStock";
+import AddMutualFund from "./pages/wealth/AddMutualFund";
 import FDDetail from "./pages/wealth/FDDetail";
 import EditFixedDeposit from "./pages/wealth/EditFixedDeposit";
 import GoldDetail from "./pages/wealth/GoldDetail";
- import AddMutualFund from "./pages/wealth/AddMutualFund";
- import MutualFundDetail from "./pages/wealth/MutualFundDetail";
+import MutualFundDetail from "./pages/wealth/MutualFundDetail";
+import StockDetail from "./pages/wealth/StockDetail";
+import SavingsDetail from "./pages/wealth/SavingsDetail";
 import Goals from "./pages/Goals";
 import GoalDetail from "./pages/GoalDetail";
 import EditGoal from "./pages/goals/EditGoal";
@@ -61,8 +64,8 @@ const App = () => (
                   <Route path="fd" element={<FixedDeposits />} />
                   <Route path="savings" element={<Savings />} />
                 </Route>
-                <Route path="/wealth/add/stocks" element={<AddStockOrMutualFund />} />
-               <Route path="/wealth/add/mutual-funds" element={<AddMutualFund />} />
+                <Route path="/wealth/add/stocks" element={<AddStock />} />
+                <Route path="/wealth/add/mutual-funds" element={<AddMutualFund />} />
                 <Route path="/wealth/add/gold" element={<AddGold />} />
                 <Route path="/wealth/add/fd" element={<AddFixedDeposit />} />
                 <Route path="/wealth/add/savings" element={<AddSimpleInvestment />} />
@@ -71,8 +74,12 @@ const App = () => (
                 <Route path="/wealth/fd/:id/edit" element={<EditFixedDeposit />} />
                 {/* Gold-specific routes */}
                 <Route path="/wealth/gold/:id" element={<GoldDetail />} />
-               {/* Mutual Fund-specific routes */}
-               <Route path="/wealth/mutual-funds/:id" element={<MutualFundDetail />} />
+                {/* Mutual Fund-specific routes */}
+                <Route path="/wealth/mutual-funds/:id" element={<MutualFundDetail />} />
+                {/* Stock-specific routes */}
+                <Route path="/wealth/stocks/:id" element={<StockDetail />} />
+                {/* Savings-specific routes */}
+                <Route path="/wealth/savings/:id" element={<SavingsDetail />} />
                 {/* Generic investment detail for other types */}
                 <Route path="/wealth/:type/:id" element={<InvestmentDetail />} />
                 <Route path="/goals" element={<Goals />} />
