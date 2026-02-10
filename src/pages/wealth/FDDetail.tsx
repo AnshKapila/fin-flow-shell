@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { MoreVertical, Trash2, XCircle } from "lucide-react";
+import { GoalAssignmentBadge } from "@/components/wealth/GoalAssignmentBadge";
+import { AssignGoalModal } from "@/components/modals/AssignGoalModal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ListCard } from "@/components/ui/list-card";
@@ -26,6 +28,7 @@ export default function FDDetail() {
   const { investments, deleteInvestment, createInvestment, isLoading } = useInvestments();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEndFDModal, setShowEndFDModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const investment = investments.find(inv => inv.id === id && inv.type === "fd");
@@ -276,6 +279,12 @@ export default function FDDetail() {
           </div>
         </ListCard>
 
+        {/* Goal Assignment */}
+        <GoalAssignmentBadge
+          goalId={investment.goal_id}
+          onAssign={() => setShowGoalModal(true)}
+        />
+
         {/* Notes */}
         {investment.notes && (
           <ListCard>
@@ -302,6 +311,15 @@ export default function FDDetail() {
           Edit Investment
         </Button>
       </div>
+
+      {investment && (
+        <AssignGoalModal
+          open={showGoalModal}
+          onOpenChange={setShowGoalModal}
+          investmentId={investment.id}
+          currentGoalId={investment.goal_id}
+        />
+      )}
 
       {/* Modals */}
       <DeleteConfirmModal

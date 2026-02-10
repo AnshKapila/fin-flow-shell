@@ -1,5 +1,5 @@
 import { User, TrendingUp } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { ListCard } from "@/components/ui/list-card";
@@ -33,6 +33,7 @@ function getGreeting(): string {
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const { goals, isLoading: goalsLoading } = useGoals();
   const { spendings, monthlyTotal, isLoading: spendingsLoading } = useSpendings();
   const { getDisplayName } = useProfile();
@@ -149,8 +150,10 @@ export default function HomePage() {
         {/* Composition & Month Flow */}
         <div className="grid grid-cols-2 gap-4">
           {/* Composition */}
-          <ListCard className="p-4">
-            <p className="mb-3 text-sm font-medium text-muted-foreground">Composition</p>
+          <ListCard className="p-4 cursor-pointer" onClick={() => navigate("/wealth")}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-muted-foreground">Composition</p>
+            </div>
             {investmentsLoading ? (
               <div className="flex items-center justify-center h-32">
                 <span className="text-sm text-muted-foreground">Loading...</span>
@@ -158,7 +161,7 @@ export default function HomePage() {
             ) : !hasWealthData ? (
               <div className="flex flex-col items-center justify-center h-32 text-center">
                 <span className="text-sm text-muted-foreground">No data yet</span>
-                <Link to="/wealth" className="text-xs text-primary mt-1">Add investments</Link>
+                <span className="text-xs text-primary mt-1">Add investments</span>
               </div>
             ) : (
               <>
@@ -192,7 +195,9 @@ export default function HomePage() {
                     )}
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-medium text-muted-foreground">Total</span>
+                    <span className="text-[10px] font-semibold text-foreground">
+                      {formatDisplayCurrency(netWorth, true)}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1.5">
@@ -209,6 +214,7 @@ export default function HomePage() {
                     <span className="text-muted-foreground">Savings</span>
                   </div>
                 </div>
+                <p className="text-xs text-primary font-medium mt-3 text-center">View More</p>
               </>
             )}
           </ListCard>
@@ -330,7 +336,7 @@ export default function HomePage() {
               {activeGoals.map((goal) => {
                 const percent = Math.round((goal.current_amount / goal.target_amount) * 100);
                 return (
-                  <ListCard key={goal.id}>
+                  <ListCard key={goal.id} onClick={() => navigate(`/goals/${goal.id}`)} className="cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-fintrack-gold/20">
                         <span className="text-lg">🎯</span>

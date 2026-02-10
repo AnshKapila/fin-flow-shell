@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { MoreVertical, Trash2, CalendarDays, Building2, CreditCard } from "lucide-react";
+import { GoalAssignmentBadge } from "@/components/wealth/GoalAssignmentBadge";
+import { AssignGoalModal } from "@/components/modals/AssignGoalModal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ListCard } from "@/components/ui/list-card";
@@ -17,6 +19,7 @@ export default function SavingsDetail() {
   const navigate = useNavigate();
   const { investments, deleteInvestment, isLoading } = useInvestments();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
   
   const investment = investments.find(inv => inv.id === id);
   
@@ -155,6 +158,12 @@ export default function SavingsDetail() {
           </div>
         </ListCard>
 
+        {/* Goal Assignment */}
+        <GoalAssignmentBadge
+          goalId={investment.goal_id}
+          onAssign={() => setShowGoalModal(true)}
+        />
+
         {/* Notes */}
         {investment.notes && (
           <ListCard>
@@ -177,6 +186,15 @@ export default function SavingsDetail() {
           </Button>
         </div>
       </div>
+
+      {investment && (
+        <AssignGoalModal
+          open={showGoalModal}
+          onOpenChange={setShowGoalModal}
+          investmentId={investment.id}
+          currentGoalId={investment.goal_id}
+        />
+      )}
 
       <DeleteConfirmModal
         open={showDeleteModal}

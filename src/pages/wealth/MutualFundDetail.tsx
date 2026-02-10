@@ -1,5 +1,7 @@
  import { useParams, useNavigate } from "react-router-dom";
  import { MoreVertical, Trash2, CalendarDays, TrendingUp, Coins } from "lucide-react";
+ import { GoalAssignmentBadge } from "@/components/wealth/GoalAssignmentBadge";
+ import { AssignGoalModal } from "@/components/modals/AssignGoalModal";
  import { PageHeader } from "@/components/layout/PageHeader";
  import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
  import { ListCard } from "@/components/ui/list-card";
@@ -16,8 +18,9 @@
  export default function MutualFundDetail() {
    const { id } = useParams();
    const navigate = useNavigate();
-   const { investments, deleteInvestment, isLoading } = useInvestments();
-   const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const { investments, deleteInvestment, isLoading } = useInvestments();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showGoalModal, setShowGoalModal] = useState(false);
    
    const investment = investments.find(inv => inv.id === id);
    const schemeCode = investment?.account_number; // We store scheme_code in account_number
@@ -214,16 +217,22 @@
            </div>
          </ListCard>
  
-         {/* Notes */}
-         {investment.notes && (
-           <ListCard>
-             <h3 className="font-semibold text-foreground mb-3">Notes</h3>
-             <p className="text-muted-foreground text-sm leading-relaxed">
-               "{investment.notes}"
-             </p>
-           </ListCard>
-         )}
-       </div>
+          {/* Goal Assignment */}
+          <GoalAssignmentBadge
+            goalId={investment.goal_id}
+            onAssign={() => setShowGoalModal(true)}
+          />
+
+          {/* Notes */}
+          {investment.notes && (
+            <ListCard>
+              <h3 className="font-semibold text-foreground mb-3">Notes</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                "{investment.notes}"
+              </p>
+            </ListCard>
+          )}
+        </div>
  
        {/* Fixed Bottom Button */}
        <div className="fixed bottom-20 left-0 right-0 p-4 bg-background border-t border-border">
@@ -237,13 +246,22 @@
          </div>
        </div>
  
-       <DeleteConfirmModal
-         open={showDeleteModal}
-         onOpenChange={setShowDeleteModal}
-         onConfirm={handleDelete}
-         title="Delete Investment"
-         description={`Are you sure you want to delete "${investment.name}"? This action cannot be undone.`}
-       />
-     </div>
-   );
- }
+        {investment && (
+          <AssignGoalModal
+            open={showGoalModal}
+            onOpenChange={setShowGoalModal}
+            investmentId={investment.id}
+            currentGoalId={investment.goal_id}
+          />
+        )}
+
+        <DeleteConfirmModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          onConfirm={handleDelete}
+          title="Delete Investment"
+          description={`Are you sure you want to delete "${investment.name}"? This action cannot be undone.`}
+        />
+      </div>
+    );
+  }

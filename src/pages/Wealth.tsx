@@ -26,7 +26,7 @@ export default function WealthPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Wealth" showNotification />
+      <PageHeader title="Wealth" />
       <AssetTypeSlider />
       
       <div className="px-4 py-4">
