@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { GoalAssignmentBadge } from "@/components/wealth/GoalAssignmentBadge";
+import { AssignGoalModal } from "@/components/modals/AssignGoalModal";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard, SummaryLabel, SummaryValue } from "@/components/ui/summary-card";
 import { ListCard } from "@/components/ui/list-card";
@@ -24,6 +26,7 @@ export default function GoldDetail() {
   const { investments, deleteInvestment, isLoading } = useInvestments();
   const { goldPrice, isLoading: priceLoading } = useGoldPrice();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
   
   const investment = investments.find(inv => inv.id === id && inv.type === "gold");
   
@@ -244,6 +247,12 @@ export default function GoldDetail() {
           </ListCard>
         )}
 
+        {/* Goal Assignment */}
+        <GoalAssignmentBadge
+          goalId={investment.goal_id}
+          onAssign={() => setShowGoalModal(true)}
+        />
+
         {/* Notes */}
         {investment.notes && (
           <ListCard>
@@ -265,6 +274,15 @@ export default function GoldDetail() {
           Edit Investment
         </Button>
       </div>
+
+      {investment && (
+        <AssignGoalModal
+          open={showGoalModal}
+          onOpenChange={setShowGoalModal}
+          investmentId={investment.id}
+          currentGoalId={investment.goal_id}
+        />
+      )}
 
       <DeleteConfirmModal
         open={showDeleteModal}

@@ -52,6 +52,7 @@ export type Database = {
           category: string | null
           created_at: string
           current_value: number
+          goal_id: string | null
           gold_type: string | null
           id: string
           interest_rate: number | null
@@ -86,6 +87,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           current_value?: number
+          goal_id?: string | null
           gold_type?: string | null
           id?: string
           interest_rate?: number | null
@@ -120,6 +122,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           current_value?: number
+          goal_id?: string | null
           gold_type?: string | null
           id?: string
           interest_rate?: number | null
@@ -147,7 +150,15 @@ export type Database = {
           user_id?: string
           weight_in_grams?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "investments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {

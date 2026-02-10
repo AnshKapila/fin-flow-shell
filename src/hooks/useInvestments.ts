@@ -27,6 +27,7 @@ export interface Investment {
   tenure_value: number | null;
   tenure_unit: TenureUnit | null;
   is_closed: boolean | null;
+  goal_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,6 +51,7 @@ export interface CreateInvestmentInput {
   tenure_value?: number | null;
   tenure_unit?: TenureUnit | null;
   is_closed?: boolean | null;
+  goal_id?: string | null;
 }
 
 export interface UpdateInvestmentInput extends Partial<CreateInvestmentInput> {
