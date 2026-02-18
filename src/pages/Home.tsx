@@ -69,21 +69,21 @@ export default function HomePage() {
     .filter(goal => goal.current_amount < goal.target_amount)
     .slice(0, 2);
   
+  // Calculate composition percentages
+  const savingsTotal = investments
+    .filter(inv => inv.type === "savings")
+    .reduce((sum, inv) => sum + Number(inv.current_value), 0);
+
   // Calculate spending data for Month Flow
   const monthlyExpense = monthlyTotal;
-  // Mock income for now - will be replaced when income tracking is added
-  const monthlyIncome = 52000;
+  // Use savings total as the income reference
+  const monthlyIncome = savingsTotal;
   const savingsRate = monthlyIncome > 0 
     ? Math.round(((monthlyIncome - monthlyExpense) / monthlyIncome) * 100) 
     : 0;
   const expensePercentage = monthlyIncome > 0 
     ? Math.min(100, Math.round((monthlyExpense / monthlyIncome) * 100)) 
     : 0;
-
-  // Calculate composition percentages
-  const savingsTotal = investments
-    .filter(inv => inv.type === "savings")
-    .reduce((sum, inv) => sum + Number(inv.current_value), 0);
   const fdTotal = investments
     .filter(inv => inv.type === "fd")
     .reduce((sum, inv) => sum + Number(inv.current_value), 0);
@@ -230,7 +230,7 @@ export default function HomePage() {
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm text-muted-foreground">Income</span>
+                    <span className="text-sm text-muted-foreground">Savings</span>
                     <span className="font-semibold text-fintrack-green">
                       {formatDisplayCurrency(monthlyIncome, true)}
                     </span>

@@ -7,18 +7,62 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+
+# Dependency directories
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+out/
+
+# Vite cache
+.vite/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Environment files
+.env
+.env.*
+
+# Supabase config
+supabase/.env
+supabase/.temp
+supabase/.output
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# Editor directories and files
 node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Misc
+*.local
+*.log
+*.pid
+*.seed
+*.tgz
+*.bak
+*.tmp
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.appmodconfig
