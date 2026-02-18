@@ -5,8 +5,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
-
 
 # Dependency directories
 node_modules/
@@ -17,8 +15,10 @@ dist-ssr/
 build/
 out/
 
-# Vite cache
+# Vite / tool caches
 .vite/
+.cache/
+/.parcel-cache/
 
 # TypeScript cache
 *.tsbuildinfo
@@ -30,7 +30,7 @@ coverage/
 .env
 .env.*
 
-# Supabase config
+# Supabase local artifacts
 supabase/.env
 supabase/.temp
 supabase/.output
@@ -41,20 +41,13 @@ Thumbs.db
 ehthumbs.db
 Icon?
 
-# Editor directories and files
-node_modules
-dist
-dist-ssr
-
-# Editor directories and files
-.vscode/*
+# IDE/editor directories
+.vscode/
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 
-# Misc
+# Misc common ignores
 *.local
-*.log
 *.pid
 *.seed
 *.tgz
@@ -66,3 +59,9 @@ dist-ssr
 *.sln
 *.sw?
 .appmodconfig
+
+# Optional: turbos and build caches
+.turbo/
+
+# Bun cache (if present)
+.bun/
