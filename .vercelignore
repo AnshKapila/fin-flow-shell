@@ -1,0 +1,9 @@
+node_modules
+.git
+.github
+test
+\.env
+*.log
+public/functions
+supabase/functions
+**/*.sql
