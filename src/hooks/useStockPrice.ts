@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export interface StockQuote {
   symbol: string;
@@ -20,15 +20,13 @@ export interface StockSearchResult {
 }
 
 async function fetchStockQuote(symbol: string): Promise<StockQuote | null> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`;
+  const response = await fetch(cloudUrl, {
+    headers: {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
 
   if (!response.ok) {
     throw new Error('Failed to fetch stock price');
@@ -38,15 +36,13 @@ async function fetchStockQuote(symbol: string): Promise<StockQuote | null> {
 }
 
 async function searchStocks(query: string): Promise<StockSearchResult[]> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stocks?action=search&query=${encodeURIComponent(query)}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/stocks?action=search&query=${encodeURIComponent(query)}`;
+  const response = await fetch(cloudUrl, {
+    headers: {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
 
   if (!response.ok) {
     throw new Error('Failed to search stocks');

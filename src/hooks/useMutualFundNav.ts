@@ -1,5 +1,5 @@
  import { useQuery } from "@tanstack/react-query";
- import { supabase } from "@/integrations/supabase/client";
+ 
  
  interface NavData {
    scheme_code: string;
@@ -29,9 +29,8 @@
        if (!schemeCode) return null;
  
       // Use POST with body for better compatibility
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mutual-fund-nav`,
-        {
+      const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mutual-fund-nav`;
+      const response = await fetch(cloudUrl, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
@@ -60,17 +59,16 @@
      queryFn: async () => {
        if (!searchQuery || searchQuery.length < 2) return [];
  
-       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mutual-fund-nav`,
-         {
-          method: 'POST',
-           headers: {
-             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'Content-Type': 'application/json',
-           },
-          body: JSON.stringify({ search: searchQuery }),
-         }
-       );
+        const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mutual-fund-nav`;
+        const response = await fetch(cloudUrl, {
+           method: 'POST',
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+             'Content-Type': 'application/json',
+            },
+           body: JSON.stringify({ search: searchQuery }),
+          }
+        );
  
        if (!response.ok) {
          return [];
@@ -88,14 +86,13 @@
    return useQuery<PopularFund[]>({
      queryKey: ["popular-mutual-funds"],
      queryFn: async () => {
-       const response = await fetch(
-         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mutual-fund-nav`,
-         {
-           headers: {
-             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-           },
-         }
-       );
+        const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mutual-fund-nav`;
+        const response = await fetch(cloudUrl, {
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+          }
+        );
  
        if (!response.ok) {
          return [];

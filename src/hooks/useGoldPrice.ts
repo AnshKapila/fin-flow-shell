@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export interface GoldPriceData {
   price_per_gram_24k: number;
@@ -21,12 +21,21 @@ export function useGoldPrice() {
     queryKey: ["gold-price"],
     queryFn: async (): Promise<GoldPriceData> => {
       try {
-        const { data, error } = await supabase.functions.invoke("gold-price");
+        const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/gold-price`;
+        const response = await fetch(cloudUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        });
         
-        if (error) {
-          console.error("Failed to fetch gold price:", error);
+        if (!response.ok) {
+          console.error("Failed to fetch gold price:", response.status);
           return FALLBACK_PRICE;
         }
+        
+        const data = await response.json();
         
         return data as GoldPriceData;
       } catch (e) {
