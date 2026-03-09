@@ -29,9 +29,8 @@
        if (!schemeCode) return null;
  
       // Use POST with body for better compatibility
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mutual-fund-nav`,
-        {
+      const cloudUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mutual-fund-nav`;
+      const response = await fetch(cloudUrl, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
